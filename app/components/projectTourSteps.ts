@@ -1,0 +1,71 @@
+import { TourStep } from './PageTour';
+
+export const projectTourSteps: TourStep[] = [
+  {
+    id: 'pdf-preview',
+    target: '[data-tour="pdf-preview"]',
+    title: 'Your Linking Strategy PDF',
+    content: 'View your completed Linking Strategy Map here. You can download it or expand to fullscreen for a better view.',
+    position: 'right',
+  },
+  {
+    id: 'project-info',
+    target: '[data-tour="project-info"]',
+    title: 'Project Details',
+    content: 'See your project title, when it was created, and the source URL if you provided one. Click the pencil icon to rename your project.',
+    position: 'left',
+  },
+  {
+    id: 'orchard-framework',
+    target: '[data-tour="orchard-framework"]',
+    title: 'Orchard Ecosystem Framework™',
+    content: 'Learn more about how each element in your strategy fits into the bigger picture with our Orchard Ecosystem Framework.',
+    position: 'left',
+    action: 'switchToOverview',
+  },
+  {
+    id: 'tab-overview',
+    target: '[data-tour="tab-overview"]',
+    title: 'Overview Tab',
+    content: 'This tab shows the overview of what your page is about, what type of page intent it is, and what clarity signals are important.',
+    position: 'bottom',
+    action: 'switchToEcosystem',
+  },
+  {
+    id: 'tab-ecosystem',
+    target: '[data-tour="tab-ecosystem"]',
+    title: 'Ecosystem Tab',
+    content: 'This area provides your topical keywords and phrases to implement based on the content in the page.',
+    position: 'bottom',
+    action: 'switchToLinks',
+  },
+  {
+    id: 'tab-links',
+    target: '[data-tour="tab-links"]',
+    title: 'Links Tab',
+    content: 'This shows you which internal pages and external site recommendations to link to.',
+    position: 'bottom',
+    action: 'switchToActions',
+  },
+  {
+    id: 'tab-actions',
+    target: '[data-tour="tab-actions"]',
+    title: 'Action Items Tab',
+    content: 'This shows you the top 5 action item recommendations for implementing your strategy for this page. These items are not automatically added to the to-do list.',
+    position: 'bottom',
+  },
+  {
+    id: 'add-all-todos',
+    target: '[data-tour="add-all-todos"]',
+    title: 'Add to To-Do List',
+    content: 'To add these action items to your to-do list, click this button.',
+    position: 'top',
+  },
+  {
+    id: 'todo-nav',
+    target: '[data-tour="todo-nav"]',
+    title: 'Your To-Do List',
+    content: "That's where the to-dos from this project will live. You can manage all your tasks there.",
+    position: 'right',
+  },
+];

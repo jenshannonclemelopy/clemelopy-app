@@ -1,0 +1,60 @@
+import { TourStep } from './PageTour';
+
+export const linkingStrategyTourSteps: TourStep[] = [
+  {
+    id: 'welcome',
+    target: null,
+    title: 'Welcome to Linking Strategy! 🎯',
+    content: 'This powerful tool analyzes your page content and generates a strategic linking map, helping you optimize your page\'s linking structure. Let\'s see how it works!',
+    position: 'center',
+    spotlightPadding: 0,
+  },
+  {
+    id: 'url-input',
+    target: '[data-tour="linking-url-input"]',
+    title: 'Page URL (Optional)',
+    content: 'Enter the URL of the page you\'re optimizing. This is optional and just for your own reference when reviewing your projects later.',
+    position: 'bottom',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'content-input',
+    target: '[data-tour="linking-content-input"]',
+    title: 'Paste Your Content',
+    content: 'Copy and paste your entire page content here. Pro tip: Use Ctrl+A (or Cmd+A on Mac) to select all text on your page, then Ctrl+C to copy. Don\'t worry about grabbing images, navigation, or footers — our AI will parse those aside and focus only on the main content!',
+    position: 'bottom',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'generate-button',
+    target: '[data-tour="linking-generate-button"]',
+    title: 'Generate Your Strategy',
+    content: 'Once you\'ve pasted at least 300 characters, click here to generate your personalized linking strategy. The AI will analyze your content and create a comprehensive linking map for your page.',
+    position: 'top',
+    spotlightPadding: 8,
+  },
+  {
+    id: 'how-it-works',
+    target: '[data-tour="linking-how-it-works"]',
+    title: 'How It Works',
+    content: 'New to linking strategies? This guide walks you through the 4-step process: copy content, paste & generate, get your strategy, then download and implement.',
+    position: 'left',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'pro-tips',
+    target: '[data-tour="linking-pro-tips"]',
+    title: 'Pro Tips',
+    content: 'Check these tips for best results! Include all visible text, provide more content for better accuracy, and review recommendations based on your site structure.',
+    position: 'left',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'my-projects',
+    target: '[data-tour="sidebar-my-projects"]',
+    title: 'Find Your Strategies',
+    content: 'All your completed linking strategies are saved in "My Projects". Click here anytime to view, download, or manage your generated PDFs!',
+    position: 'right',
+    spotlightPadding: 8,
+  },
+];
