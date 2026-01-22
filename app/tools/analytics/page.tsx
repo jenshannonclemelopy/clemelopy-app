@@ -7,7 +7,7 @@
  * Uses Clemelopy's glassmorphic design system with PageHeader and PageContainer.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import ConnectGA4Button from '../../components/analytics/ConnectGA4Button';
@@ -24,7 +24,8 @@ import PageContainer from '../../components/PageContainer';
 type ConnectionStatus = 'loading' | 'disconnected' | 'select_property' | 'connected';
 type DateRange = '7days' | '30days' | '90days';
 
-export default function AnalyticsPage() {
+// Inner component that uses useSearchParams
+function AnalyticsContent() {
   const searchParams = useSearchParams();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('loading');
   const [analyticsData, setAnalyticsData] = useState<AIReferralData | null>(null);
@@ -167,6 +168,313 @@ export default function AnalyticsPage() {
   }
 
   return (
+    <>
+      {/* Header Actions - Date Range & Refresh */}
+      {connectionStatus === 'connected' && (
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div className="flex items-center gap-2">
+            <span 
+              className="text-sm px-3 py-1.5 rounded-lg"
+              style={{ 
+                fontFamily: 'Inter', 
+                fontWeight: 500, 
+                background: 'rgba(0, 169, 157, 0.1)',
+                color: '#005a54',
+              }}
+            >
+              Connected to: <strong>{propertyName}</strong>
+            </span>
+            <button 
+              onClick={handleDisconnect}
+              className="text-sm underline"
+              style={{ fontFamily: 'Inter', color: '#DC2626' }}
+            >
+              Disconnect
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <button
+              onClick={() => fetchAnalyticsData()}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm disabled:opacity-50"
+              style={{
+                fontFamily: 'Montserrat Alternates',
+                fontWeight: 500,
+                background: 'rgba(255, 255, 255, 0.6)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.6)',
+                color: '#1a1a1a',
+              }}
+            >
+              <RefreshIcon />
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div 
+          className="p-4 rounded-xl mb-6"
+          style={{
+            background: 'rgba(220, 38, 38, 0.1)',
+            border: '1px solid rgba(220, 38, 38, 0.3)',
+          }}
+        >
+          <p style={{ fontFamily: 'Inter', fontWeight: 500, color: '#DC2626' }}>
+            {error}
+          </p>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {connectionStatus === 'loading' && (
+        <div className="flex items-center justify-center py-20">
+          <div 
+            className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
+            style={{ borderColor: '#00A99D', borderTopColor: 'transparent' }}
+          />
+        </div>
+      )}
+
+      {/* Disconnected State - Show Connect Button */}
+      {connectionStatus === 'disconnected' && (
+        <div 
+          className="text-center p-12 rounded-2xl"
+          style={{
+            background: 'rgba(255, 255, 255, 0.5)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
+          }}
+        >
+          <div 
+            className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+            style={{
+              background: 'linear-gradient(135deg, #FAA819 0%, #E99502 50%, #00A99D 100%)',
+            }}
+          >
+            <AnalyticsIcon />
+          </div>
+          <h3 
+            className="text-2xl mb-3"
+            style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
+          >
+            Connect Google Analytics
+          </h3>
+          <p 
+            className="mb-6 max-w-md mx-auto"
+            style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
+          >
+            Link your GA4 property to see how much traffic AI platforms like ChatGPT, 
+            Perplexity, and Claude are sending to your website.
+          </p>
+          <ConnectGA4Button />
+          <div className="mt-6 flex items-center justify-center gap-6 text-sm" style={{ color: '#4a4642' }}>
+            <div className="flex items-center gap-2">
+              <CheckIcon />
+              <span style={{ fontFamily: 'Inter', fontWeight: 500 }}>Read-only access</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckIcon />
+              <span style={{ fontFamily: 'Inter', fontWeight: 500 }}>No data stored</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckIcon />
+              <span style={{ fontFamily: 'Inter', fontWeight: 500 }}>Disconnect anytime</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Property Selection State */}
+      {connectionStatus === 'select_property' && (
+        <PropertySelector onSelect={handlePropertySelected} />
+      )}
+
+      {/* Connected State - Show Analytics */}
+      {connectionStatus === 'connected' && (
+        <>
+          {isLoading && !analyticsData ? (
+            <div className="flex items-center justify-center py-20">
+              <div 
+                className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
+                style={{ borderColor: '#00A99D', borderTopColor: 'transparent' }}
+              />
+            </div>
+          ) : analyticsData ? (
+            <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <InsightsCard
+                  title="AI Sessions"
+                  value={analyticsData.totalSessions.toLocaleString()}
+                  change={analyticsData.previousPeriodComparison.sessionsChange}
+                  icon={<SessionsIcon />}
+                />
+                <InsightsCard
+                  title="AI Users"
+                  value={analyticsData.totalUsers.toLocaleString()}
+                  change={analyticsData.previousPeriodComparison.usersChange}
+                  icon={<UsersIcon />}
+                />
+                <InsightsCard
+                  title="Conversions"
+                  value={analyticsData.totalConversions.toLocaleString()}
+                  change={analyticsData.previousPeriodComparison.conversionsChange}
+                  icon={<ConversionsIcon />}
+                />
+                <InsightsCard
+                  title="Engagement Rate"
+                  value={`${analyticsData.avgEngagementRate}%`}
+                  icon={<EngagementIcon />}
+                />
+              </div>
+
+              {/* Charts Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Trend Chart - Takes 2 columns */}
+                <div 
+                  className="lg:col-span-2 p-6 rounded-2xl"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.5)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.6)',
+                  }}
+                >
+                  <h3 
+                    className="text-base mb-4"
+                    style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
+                  >
+                    AI Traffic Trend
+                  </h3>
+                  <AIReferralChart type="trend" data={analyticsData.trend} />
+                </div>
+                
+                {/* Sources Chart */}
+                <div 
+                  className="p-6 rounded-2xl"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.5)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.6)',
+                  }}
+                >
+                  <h3 
+                    className="text-base mb-4"
+                    style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
+                  >
+                    Traffic by AI Platform
+                  </h3>
+                  <AIReferralChart type="sources" data={analyticsData.bySource} />
+                </div>
+              </div>
+
+              {/* Tables Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div 
+                  className="p-6 rounded-2xl"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.5)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.6)',
+                  }}
+                >
+                  <h3 
+                    className="text-base mb-4"
+                    style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
+                  >
+                    Top AI Sources
+                  </h3>
+                  <ReferralTable type="sources" data={analyticsData.bySource} />
+                </div>
+                <div 
+                  className="p-6 rounded-2xl"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.5)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.6)',
+                  }}
+                >
+                  <h3 
+                    className="text-base mb-4"
+                    style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
+                  >
+                    Top Landing Pages
+                  </h3>
+                  <ReferralTable type="pages" data={analyticsData.byLandingPage} />
+                </div>
+              </div>
+
+              {/* No Data Message */}
+              {analyticsData.totalSessions === 0 && (
+                <div 
+                  className="text-center p-12 rounded-2xl mt-6"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.5)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.6)',
+                  }}
+                >
+                  <div className="text-5xl mb-4">📊</div>
+                  <h3 
+                    className="text-xl mb-3"
+                    style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
+                  >
+                    No AI Traffic Yet
+                  </h3>
+                  <p 
+                    className="max-w-md mx-auto mb-4"
+                    style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
+                  >
+                    We haven't detected any visitors from AI platforms in this time period. 
+                    This is normal if you're just getting started with GEO!
+                  </p>
+                  <p 
+                    className="inline-block px-4 py-3 rounded-xl text-sm"
+                    style={{ 
+                      fontFamily: 'Inter', 
+                      fontWeight: 500, 
+                      background: 'rgba(250, 168, 25, 0.1)',
+                      color: '#4a4642',
+                    }}
+                  >
+                    <strong>Tip:</strong> Use Clemelopy's tools to optimize your content 
+                    for AI discoverability, then check back in a few weeks.
+                  </p>
+                </div>
+              )}
+            </>
+          ) : null}
+        </>
+      )}
+    </>
+  );
+}
+
+// Loading fallback for Suspense
+function AnalyticsLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div 
+        className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
+        style={{ borderColor: '#00A99D', borderTopColor: 'transparent' }}
+      />
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function AnalyticsPage() {
+  return (
     <Layout activeNav="tools">
       <main>
         {/* Page Header */}
@@ -181,313 +489,9 @@ export default function AnalyticsPage() {
 
         {/* Main Content Container */}
         <PageContainer>
-          {/* Header Actions - Date Range & Refresh */}
-          {connectionStatus === 'connected' && (
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <span 
-                  className="text-sm px-3 py-1.5 rounded-lg"
-                  style={{ 
-                    fontFamily: 'Inter', 
-                    fontWeight: 500, 
-                    background: 'rgba(0, 169, 157, 0.1)',
-                    color: '#005a54',
-                  }}
-                >
-                  Connected to: <strong>{propertyName}</strong>
-                </span>
-                <button 
-                  onClick={handleDisconnect}
-                  className="text-sm underline"
-                  style={{ fontFamily: 'Inter', color: '#DC2626' }}
-                >
-                  Disconnect
-                </button>
-              </div>
-              <div className="flex items-center gap-3">
-                <DateRangePicker value={dateRange} onChange={setDateRange} />
-                <button
-                  onClick={() => fetchAnalyticsData()}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm disabled:opacity-50"
-                  style={{
-                    fontFamily: 'Montserrat Alternates',
-                    fontWeight: 500,
-                    background: 'rgba(255, 255, 255, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.8)',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                    color: '#1a1a1a',
-                  }}
-                >
-                  <RefreshIcon />
-                  {isLoading ? 'Loading...' : 'Refresh'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {error && (
-            <div 
-              className="flex items-center justify-between px-4 py-3 rounded-xl mb-6"
-              style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
-            >
-              <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#DC2626' }}>⚠️ {error}</span>
-              <button 
-                onClick={() => setError(null)}
-                className="text-xl"
-                style={{ color: '#DC2626' }}
-              >
-                ×
-              </button>
-            </div>
-          )}
-
-          {/* Loading State */}
-          {connectionStatus === 'loading' && (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div 
-                className="w-12 h-12 rounded-full mb-4 animate-spin"
-                style={{ 
-                  border: '3px solid rgba(250, 168, 25, 0.2)',
-                  borderTopColor: '#FAA819',
-                }}
-              />
-              <p style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}>
-                Checking connection...
-              </p>
-            </div>
-          )}
-
-          {/* Disconnected State - Connect Card */}
-          {connectionStatus === 'disconnected' && (
-            <div className="flex justify-center py-12">
-              <div 
-                className="text-center max-w-md p-12 rounded-3xl"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.7) 50%, rgba(0, 169, 157, 0.05) 100%)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(255, 255, 255, 0.7)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-                }}
-              >
-                {/* Icon */}
-                <div 
-                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
-                  style={{ background: 'linear-gradient(135deg, #FAA819 0%, #E99502 50%, #00A99D 100%)' }}
-                >
-                  <AnalyticsIcon />
-                </div>
-                
-                <h2 
-                  className="text-2xl mb-3"
-                  style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
-                >
-                  Connect Google Analytics
-                </h2>
-                <p 
-                  className="mb-6"
-                  style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642', lineHeight: 1.6 }}
-                >
-                  Link your GA4 property to see how much traffic AI platforms are sending to your website.
-                </p>
-                
-                <ConnectGA4Button />
-                
-                {/* Features List */}
-                <div className="mt-8 text-left space-y-3">
-                  {[
-                    'Track ChatGPT, Perplexity, Claude & more',
-                    'See which pages AI sends visitors to',
-                    'Monitor trends over time',
-                  ].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <CheckIcon />
-                      <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642', fontSize: '14px' }}>
-                        {feature}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Select Property State */}
-          {connectionStatus === 'select_property' && (
-            <div className="flex justify-center py-12">
-              <PropertySelector onSelect={handlePropertySelected} />
-            </div>
-          )}
-
-          {/* Connected State - Analytics Dashboard */}
-          {connectionStatus === 'connected' && (
-            <>
-              {isLoading && !analyticsData ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <div 
-                    className="w-12 h-12 rounded-full mb-4 animate-spin"
-                    style={{ 
-                      border: '3px solid rgba(250, 168, 25, 0.2)',
-                      borderTopColor: '#FAA819',
-                    }}
-                  />
-                  <p style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}>
-                    Loading your AI traffic data...
-                  </p>
-                </div>
-              ) : analyticsData ? (
-                <>
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <InsightsCard
-                      title="AI Sessions"
-                      value={analyticsData.totalSessions.toLocaleString()}
-                      change={analyticsData.previousPeriodComparison.sessionsChange}
-                      icon={<SessionsIcon />}
-                    />
-                    <InsightsCard
-                      title="AI Users"
-                      value={analyticsData.totalUsers.toLocaleString()}
-                      change={analyticsData.previousPeriodComparison.usersChange}
-                      icon={<UsersIcon />}
-                    />
-                    <InsightsCard
-                      title="Conversions"
-                      value={analyticsData.totalConversions.toLocaleString()}
-                      change={analyticsData.previousPeriodComparison.conversionsChange}
-                      icon={<ConversionsIcon />}
-                    />
-                    <InsightsCard
-                      title="Engagement Rate"
-                      value={`${analyticsData.avgEngagementRate}%`}
-                      icon={<EngagementIcon />}
-                    />
-                  </div>
-
-                  {/* Charts Row */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    {/* Trend Chart - Takes 2 columns */}
-                    <div 
-                      className="lg:col-span-2 p-6 rounded-2xl"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.5)',
-                        backdropFilter: 'blur(10px)',
-                        WebkitBackdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.6)',
-                      }}
-                    >
-                      <h3 
-                        className="text-base mb-4"
-                        style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
-                      >
-                        AI Traffic Trend
-                      </h3>
-                      <AIReferralChart type="trend" data={analyticsData.trend} />
-                    </div>
-                    
-                    {/* Sources Chart */}
-                    <div 
-                      className="p-6 rounded-2xl"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.5)',
-                        backdropFilter: 'blur(10px)',
-                        WebkitBackdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.6)',
-                      }}
-                    >
-                      <h3 
-                        className="text-base mb-4"
-                        style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
-                      >
-                        Traffic by AI Platform
-                      </h3>
-                      <AIReferralChart type="sources" data={analyticsData.bySource} />
-                    </div>
-                  </div>
-
-                  {/* Tables Row */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div 
-                      className="p-6 rounded-2xl"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.5)',
-                        backdropFilter: 'blur(10px)',
-                        WebkitBackdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.6)',
-                      }}
-                    >
-                      <h3 
-                        className="text-base mb-4"
-                        style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
-                      >
-                        Top AI Sources
-                      </h3>
-                      <ReferralTable type="sources" data={analyticsData.bySource} />
-                    </div>
-                    <div 
-                      className="p-6 rounded-2xl"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.5)',
-                        backdropFilter: 'blur(10px)',
-                        WebkitBackdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.6)',
-                      }}
-                    >
-                      <h3 
-                        className="text-base mb-4"
-                        style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
-                      >
-                        Top Landing Pages
-                      </h3>
-                      <ReferralTable type="pages" data={analyticsData.byLandingPage} />
-                    </div>
-                  </div>
-
-                  {/* No Data Message */}
-                  {analyticsData.totalSessions === 0 && (
-                    <div 
-                      className="text-center p-12 rounded-2xl mt-6"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.5)',
-                        backdropFilter: 'blur(10px)',
-                        WebkitBackdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.6)',
-                      }}
-                    >
-                      <div className="text-5xl mb-4">📊</div>
-                      <h3 
-                        className="text-xl mb-3"
-                        style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
-                      >
-                        No AI Traffic Yet
-                      </h3>
-                      <p 
-                        className="max-w-md mx-auto mb-4"
-                        style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
-                      >
-                        We haven't detected any visitors from AI platforms in this time period. 
-                        This is normal if you're just getting started with GEO!
-                      </p>
-                      <p 
-                        className="inline-block px-4 py-3 rounded-xl text-sm"
-                        style={{ 
-                          fontFamily: 'Inter', 
-                          fontWeight: 500, 
-                          background: 'rgba(250, 168, 25, 0.1)',
-                          color: '#4a4642',
-                        }}
-                      >
-                        <strong>Tip:</strong> Use Clemelopy's tools to optimize your content 
-                        for AI discoverability, then check back in a few weeks.
-                      </p>
-                    </div>
-                  )}
-                </>
-              ) : null}
-            </>
-          )}
+          <Suspense fallback={<AnalyticsLoadingFallback />}>
+            <AnalyticsContent />
+          </Suspense>
         </PageContainer>
       </main>
     </Layout>

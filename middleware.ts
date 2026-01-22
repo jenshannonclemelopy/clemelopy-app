@@ -65,7 +65,7 @@ export const config = {
     '/',
     '/my-projects/:path*',
     '/to-do/:path*',
-    '/linking-strategy/:path*',
+    '/tools/linking-strategy/:path*',
     '/settings/:path*',
     '/support/:path*',
     '/project/:path*',
