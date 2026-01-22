@@ -64,7 +64,10 @@ interface HistoryItem {
   schema: Record<string, unknown> | Record<string, unknown>[];
   schemaScript: string;
 }
-
+interface SchemaBuilderProps {
+  externalActiveTab?: string;
+  onTabChange?: (tab: string) => void;
+}
 // ============================================
 // SCHEMA TYPES CONFIGURATION
 // ============================================
@@ -214,7 +217,7 @@ const SCHEMA_TYPES: SchemaTypes = {
 // MAIN COMPONENT
 // ============================================
 
-export default function SchemaBuilder() {
+export default function SchemaBuilder({ externalActiveTab, onTabChange }: SchemaBuilderProps = {}) {
   // State with proper types
   const [activeTab, setActiveTab] = useState<string>('url');
   const [selectedType, setSelectedType] = useState<string>('');
@@ -237,7 +240,18 @@ export default function SchemaBuilder() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   const API_URL = process.env.NEXT_PUBLIC_SCHEMA_API_URL || '';
+// Sync with external tab control (for tour)
+useEffect(() => {
+  if (externalActiveTab && externalActiveTab !== activeTab) {
+    setActiveTab(externalActiveTab);
+  }
+}, [externalActiveTab, activeTab]);
 
+// Wrapper to notify parent of tab changes
+const handleTabChange = (tab: string) => {
+  setActiveTab(tab);
+  onTabChange?.(tab);
+};
   // ============================================
   // SAVE TO SUPABASE
   // ============================================
@@ -982,16 +996,17 @@ ${script}`;
       <div className="bg-white/85 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-white/60">
         
         {/* Input Tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div data-tour="schema-tabs" className="flex gap-2 mb-6 flex-wrap">
           {[
-            { key: 'url', label: '🔗 From URL' },
-            { key: 'paste', label: '📋 Paste Content' },
-            { key: 'manual', label: '✍️ Manual Entry' },
-            { key: 'batch', label: '📚 Batch' }
-          ].map(({ key, label }) => (
+            { key: 'url', label: '🔗 From URL', tourId: 'tab-url' },
+            { key: 'paste', label: '📋 Paste Content', tourId: 'tab-paste' },
+            { key: 'manual', label: '✍️ Manual Entry', tourId: 'tab-manual' },
+            { key: 'batch', label: '📚 Batch', tourId: 'tab-batch' }
+          ].map(({ key, label, tourId }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key)}
+              data-tour={tourId}
+              onClick={() => handleTabChange(key)}
               className={`px-5 py-3 rounded-xl cursor-pointer font-medium text-sm transition-all duration-200
                 ${activeTab === key 
                   ? 'bg-linear-to-r from-[#FAA819] to-[#E99502] text-white shadow-md' 
@@ -1019,7 +1034,7 @@ ${script}`;
         {/* Tab Content */}
         <div className="mb-6">
           {activeTab === 'url' && (
-            <div>
+            <div data-tour="url-input">
               <label className="block font-medium mb-2 text-[#4a4642]">Enter your page URL</label>
               <div className="flex gap-3 flex-col sm:flex-row">
                 <input
@@ -1046,7 +1061,7 @@ ${script}`;
           )}
 
           {activeTab === 'paste' && (
-            <div>
+            <div data-tour="paste-input">
               <label className="block font-medium mb-2 text-[#4a4642]">Paste your page content</label>
               <textarea
                 value={contentInput}
@@ -1071,9 +1086,9 @@ ${script}`;
           )}
 
           {activeTab === 'manual' && (
-            <div>
+            <div data-tour="manual-input">
               <h4 className="font-semibold mb-3 text-[#4a4642]">Select Schema Type</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+              <div data-tour="schema-types" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
                 {Object.entries(SCHEMA_TYPES).map(([key, config]) => (
                   <div
                     key={key}
@@ -1097,7 +1112,7 @@ ${script}`;
           )}
 
           {activeTab === 'batch' && (
-            <div>
+            <div data-tour="batch-input">
               <label className="block font-medium mb-2 text-[#4a4642]">Enter multiple URLs (one per line, max 10)</label>
               <textarea
                 value={batchUrls}

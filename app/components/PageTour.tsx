@@ -10,20 +10,31 @@ export interface TourStep {
   content: string;
   position: 'top' | 'bottom' | 'left' | 'right' | 'center';
   spotlightPadding?: number;
-  action?: string;
+  action?: string;        // Fires when clicking Next (after step)
+  beforeAction?: string;  // NEW: Fires when entering step (before showing)
 }
 
 interface PageTourProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
-  onSkip?: () => void;  // Called when user clicks "Skip tour"
+  onSkip?: () => void;
   steps: TourStep[];
   tourName: string;
   onAction?: (action: string) => void;
+  onBeforeStep?: (stepIndex: number, step: TourStep) => void;  // NEW: Called before each step
 }
 
-export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, tourName, onAction }: PageTourProps) {
+export default function PageTour({ 
+  isOpen, 
+  onClose, 
+  onComplete, 
+  onSkip, 
+  steps, 
+  tourName, 
+  onAction,
+  onBeforeStep 
+}: PageTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -67,16 +78,33 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
     }
   }, [isOpen, step]);
 
+  // NEW: Fire beforeAction when step changes
+  useEffect(() => {
+    if (!isOpen || !step) return;
+    
+    // Fire beforeAction for the current step
+    if (step.beforeAction && onAction) {
+      onAction(step.beforeAction);
+    }
+    
+    // Also call onBeforeStep callback
+    if (onBeforeStep) {
+      onBeforeStep(currentStep, step);
+    }
+    
+    // Wait for DOM to update after action, then find target
+    const timer = setTimeout(updateTargetRect, 150);
+    
+    return () => clearTimeout(timer);
+  }, [currentStep, isOpen, step, onAction, onBeforeStep]);
+
   useEffect(() => {
     if (!isOpen) return;
-    
-    const timer = setTimeout(updateTargetRect, 100);
     
     window.addEventListener('scroll', updateTargetRect, true);
     window.addEventListener('resize', updateTargetRect);
     
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('scroll', updateTargetRect, true);
       window.removeEventListener('resize', updateTargetRect);
     };
@@ -101,6 +129,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
   }, [isOpen]);
 
   const handleNext = () => {
+    // Fire the "after" action when clicking Next
     if (step?.action && onAction) {
       onAction(step.action);
     }
@@ -127,7 +156,6 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
     if (onAction) {
       onAction('closeTaskModal');
     }
-    // Use onSkip if provided (shows alert), otherwise fall back to onClose
     if (onSkip) {
       onSkip();
     } else {
@@ -203,6 +231,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 99999 }}>
+      {/* Dark overlay when no spotlight target */}
       {!hasSpotlight && (
         <div 
           onClick={handleSkip}
@@ -218,6 +247,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
         />
       )}
       
+      {/* Clickable backdrop when there IS a spotlight */}
       {hasSpotlight && (
         <div 
           onClick={handleSkip}
@@ -232,6 +262,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
         />
       )}
       
+      {/* Spotlight cutout */}
       {hasSpotlight && targetRect && (
         <div 
           style={{
@@ -250,6 +281,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
         />
       )}
 
+      {/* Tooltip */}
       <div 
         style={{
           ...getTooltipStyles(),
@@ -267,6 +299,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
           transition: 'opacity 0.3s ease, transform 0.3s ease',
         }}
       >
+        {/* Gradient bar */}
         <div 
           style={{
             height: '4px',
@@ -275,6 +308,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
         />
         
         <div style={{ padding: (!targetRect || step?.position === 'center') ? '32px' : '24px' }}>
+          {/* Progress dots */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', gap: '6px' }}>
               {steps.map((_, idx) => (
@@ -299,6 +333,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
             </span>
           </div>
 
+          {/* Title */}
           <h3 style={{ 
             fontSize: '20px', 
             fontWeight: 700, 
@@ -308,6 +343,8 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
           }}>
             {step.title}
           </h3>
+          
+          {/* Content */}
           <p style={{ 
             fontSize: '15px', 
             color: 'rgba(46, 42, 39, 0.7)', 
@@ -319,6 +356,7 @@ export default function PageTour({ isOpen, onClose, onComplete, onSkip, steps, t
             {step.content}
           </p>
 
+          {/* Actions */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <button 
               onClick={handleSkip}

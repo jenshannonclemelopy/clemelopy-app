@@ -1,15 +1,73 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import SchemaBuilder from '../../components/SchemaBuilder';
+import PageTour from '../../components/PageTour';
+import TourHelpButton from '../../components/TourHelpButton';
+import { schemaStudioTourSteps } from '../../components/schemaStudioTourSteps';
 
 export default function SchemaStudioPage() {
+  // Tour state
+  const [showTour, setShowTour] = useState(false);
+  const [tourCompleted, setTourCompleted] = useState(false);
+  
+  // State to control SchemaBuilder's active tab from the tour
+  const [externalActiveTab, setExternalActiveTab] = useState<string | undefined>(undefined);
+
+  // Check localStorage on mount
+  useEffect(() => {
+    const completed = localStorage.getItem('clemelopy_schema_studio_tour_completed') === 'true';
+    setTourCompleted(completed);
+  }, []);
+
+  // Handler for tour actions - switches tabs during the tour
+  // This handles BOTH beforeAction and action callbacks
+  const handleTourAction = (action: string) => {
+    switch (action) {
+      case 'switchToUrl':
+        setExternalActiveTab('url');
+        break;
+      case 'switchToPaste':
+        setExternalActiveTab('paste');
+        break;
+      case 'switchToManual':
+        setExternalActiveTab('manual');
+        break;
+      case 'switchToBatch':
+        setExternalActiveTab('batch');
+        break;
+    }
+  };
+
+  const handleTourComplete = () => {
+    setShowTour(false);
+    setTourCompleted(true);
+    setExternalActiveTab(undefined);
+    localStorage.setItem('clemelopy_schema_studio_tour_completed', 'true');
+  };
+
+  const handleTourClose = () => {
+    setShowTour(false);
+    setExternalActiveTab(undefined);
+  };
+
+  const handleTourSkip = () => {
+    setShowTour(false);
+    setExternalActiveTab(undefined);
+    localStorage.setItem('clemelopy_schema_studio_tour_dismissed', 'true');
+  };
+
+  const handleStartTour = () => {
+    // Reset to URL tab when starting tour
+    setExternalActiveTab('url');
+    setShowTour(true);
+  };
+
   return (
-    <Layout 
-      activeNav="tools"
-    >
+    <Layout activeNav="tools">
       <main>
-        {/* Header - Frosted Glass Container (exact styling from To-Do page) */}
+        {/* Header - Frosted Glass Container */}
         <header 
           className="rounded-2xl px-8 py-12 mb-8"
           style={{
@@ -49,22 +107,11 @@ export default function SchemaStudioPage() {
                 Create structured data markup so AI engines can understand and cite your content.
               </p>
             </div>
-            {/* Tour Button - question mark circle icon */}
-            <button
-              className="px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0 transition-all hover:shadow-md"
-              style={{
-                fontFamily: 'Montserrat Alternates',
-                fontWeight: 500,
-                background: 'rgba(255, 255, 255, 0.6)',
-                border: '1px solid rgba(0, 169, 157, 0.3)',
-                color: '#005a54',
-              }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Tour
-            </button>
+            {/* Tour Button */}
+            <TourHelpButton 
+              onClick={handleStartTour} 
+              hasCompleted={tourCompleted}
+            />
           </div>
         </header>
 
@@ -80,9 +127,29 @@ export default function SchemaStudioPage() {
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)' 
           }}
         >
-          <SchemaBuilder />
+          <SchemaBuilder 
+            externalActiveTab={externalActiveTab}
+            onTabChange={(tab) => {
+              // If user manually changes tab during tour, sync external state
+              // This prevents the tour from fighting with user input
+              if (showTour) {
+                setExternalActiveTab(tab);
+              }
+            }}
+          />
         </div>
       </main>
+
+      {/* Tour Component */}
+      <PageTour
+        isOpen={showTour}
+        onClose={handleTourClose}
+        onComplete={handleTourComplete}
+        onSkip={handleTourSkip}
+        steps={schemaStudioTourSteps}
+        tourName="schema-studio"
+        onAction={handleTourAction}
+      />
     </Layout>
   );
 }
