@@ -402,7 +402,7 @@ export default function MyProjects() {
                   </a>
                 )}
                 <a 
-                  href="/linking-strategy"
+                  href="/tools/linking-strategy"
                   style={{ 
                     fontFamily: 'Montserrat Alternates',
                     fontWeight: 500,
@@ -600,7 +600,7 @@ export default function MyProjects() {
                 </p>
                 {!searchQuery && (
                   <a
-                    href="/linking-strategy"
+                    href="/tools/linking-strategy"
                     className="inline-flex items-center gap-2 py-3 px-6 rounded-xl"
                     style={{ 
                       fontFamily: 'Montserrat Alternates',

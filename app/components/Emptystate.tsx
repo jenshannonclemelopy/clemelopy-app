@@ -141,7 +141,7 @@ export function NoProjectsEmpty() {
       title="No projects yet"
       description="Create your first linking strategy to get started on your GEO optimization journey."
       actionLabel="Create Your First Project"
-      actionHref="/linking-strategy"
+      actionHref="/tools/linking-strategy"
     />
   );
 }

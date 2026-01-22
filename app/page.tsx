@@ -633,7 +633,7 @@ export default function Workspace() {
             </div>
 
             <a 
-              href="/linking-strategy"
+              href="/tools/linking-strategy"
               className="block w-full px-6 py-3 rounded-xl font-bold text-center transition-all duration-300 hover:scale-105 focus:scale-105"
               style={{ 
                 fontFamily: 'Montserrat Alternates',
@@ -982,7 +982,7 @@ export default function Workspace() {
                   No projects yet
                 </p>
                 <a 
-                  href="/linking-strategy" 
+                  href="/tools/linking-strategy" 
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 hover:scale-105"
                   style={{ 
                     fontFamily: 'Montserrat Alternates',
@@ -1095,7 +1095,7 @@ export default function Workspace() {
                 {/* Start New Project Link */}
                 <div className="pt-2 text-center">
                   <a 
-                    href="/linking-strategy" 
+                    href="/tools/linking-strategy" 
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 hover:scale-105"
                     style={{ 
                       fontFamily: 'Montserrat Alternates',

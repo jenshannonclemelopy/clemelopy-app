@@ -2274,7 +2274,7 @@ export default function LearnPage() {
               
               <div className="text-center lg:text-left">
                 <Link 
-                  href="/linking-strategy" 
+                  href="/tools/linking-strategy" 
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#00A99D] focus:ring-offset-2"
                   style={{ background: 'linear-gradient(135deg, #00A99D, #0D7871)', fontFamily: 'Montserrat Alternates' }}
                 >
