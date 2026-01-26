@@ -7,7 +7,7 @@ import Link from 'next/link';
 import MobileNudge from './MobileNudge';
 import EmailConfirmationBanner from '../components/EmailConfirmationBanner';
 
-type NavItem = 'workspace' | 'my-projects' | 'tools' | 'linking-strategy' | 'schema-studio' | 'learn' | 'to-do' | 'support' | 'settings' | 'logout';
+type NavItem = 'workspace' | 'my-projects' | 'tools' | 'linking-strategy' | 'schema-studio' | 'learn' | 'to-do' | 'support' | 'settings' | 'logout' | 'geo-blueprint';
 
 interface LayoutProps {
   children: ReactNode;
@@ -573,6 +573,7 @@ export default function Layout({ children, activeNav, pageBackground, pageTitle,
   const navItems: NavItemConfig[] = [
     { key: 'workspace', label: 'Workspace', href: '/', icon: '/icons/home.svg' },
     { key: 'my-projects', label: 'My Projects', href: '/my-projects', icon: '/icons/projects.svg' },
+    { key: 'geo-blueprint', label: 'GEO Blueprint', href: '/geo-blueprint', icon: '/icons/blueprint.svg' },
     { 
       key: 'tools', 
       label: 'Tools', 
