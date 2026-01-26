@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import SchemaRunLimitModal from './SchemaRunLimitModal';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -239,19 +240,36 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
   const [exportFormat, setExportFormat] = useState<string>('raw');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  const API_URL = process.env.NEXT_PUBLIC_SCHEMA_API_URL || '';
-// Sync with external tab control (for tour)
-useEffect(() => {
-  if (externalActiveTab && externalActiveTab !== activeTab) {
-    setActiveTab(externalActiveTab);
-  }
-}, [externalActiveTab, activeTab]);
+  // Usage limit modal state
+  const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-// Wrapper to notify parent of tab changes
-const handleTabChange = (tab: string) => {
-  setActiveTab(tab);
-  onTabChange?.(tab);
-};
+  const API_URL = process.env.NEXT_PUBLIC_SCHEMA_API_URL || '';
+
+  // Fetch current user on mount for usage tracking
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Sync with external tab control (for tour)
+  useEffect(() => {
+    if (externalActiveTab && externalActiveTab !== activeTab) {
+      setActiveTab(externalActiveTab);
+    }
+  }, [externalActiveTab, activeTab]);
+
+  // Wrapper to notify parent of tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
+
   // ============================================
   // SAVE TO SUPABASE
   // ============================================
@@ -322,10 +340,20 @@ const handleTabChange = (tab: string) => {
       const response = await fetch(`${API_URL}/fetch-analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: urlInput.trim() }),
+        body: JSON.stringify({ 
+          url: urlInput.trim(),
+          userId: currentUserId
+        }),
       });
 
       const data = await response.json();
+
+      // Check for limit reached error
+      if (data.error === 'limit_reached') {
+        setShowLimitModal(true);
+        setIsLoading(false);
+        return;
+      }
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to analyze URL');
@@ -385,10 +413,20 @@ const handleTabChange = (tab: string) => {
       const response = await fetch(`${API_URL}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: contentInput.trim() }),
+        body: JSON.stringify({ 
+          content: contentInput.trim(),
+          userId: currentUserId
+        }),
       });
 
       const data = await response.json();
+
+      // Check for limit reached error
+      if (data.error === 'limit_reached') {
+        setShowLimitModal(true);
+        setIsLoading(false);
+        return;
+      }
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to analyze content');
@@ -435,6 +473,7 @@ const handleTabChange = (tab: string) => {
   };
 
   const handleGenerateSchema = async (): Promise<void> => {
+    // Manual generation - NO LIMIT (doesn't use AI)
     if (!selectedType) {
       setError('Please select a schema type');
       return;
@@ -513,17 +552,34 @@ const handleTabChange = (tab: string) => {
       const response = await fetch(`${API_URL}/batch-analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls }),
+        body: JSON.stringify({ 
+          urls,
+          userId: currentUserId
+        }),
       });
 
       const data = await response.json();
+
+      // Check for limit reached error
+      if (data.error === 'limit_reached') {
+        setShowLimitModal(true);
+        setBatchProgress('');
+        setIsLoading(false);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Batch processing failed');
       }
 
       setBatchResults(data.results || []);
-      setBatchProgress(`Completed! ${data.results?.filter((r: BatchResult) => r.success).length || 0} of ${urls.length} URLs processed successfully.`);
+      
+      // Show info about skipped URLs if any were due to limit
+      let progressMessage = `Completed! ${data.results?.filter((r: BatchResult) => r.success).length || 0} of ${urls.length} URLs processed successfully.`;
+      if (data.urlsSkipped && data.urlsSkipped > 0) {
+        progressMessage += ` (${data.urlsSkipped} URLs skipped due to monthly limit)`;
+      }
+      setBatchProgress(progressMessage);
 
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -1227,6 +1283,12 @@ ${script}`;
         {/* Generated Schema */}
         {renderGeneratedSchema()}
       </div>
+
+      {/* Usage Limit Modal */}
+      <SchemaRunLimitModal 
+        isOpen={showLimitModal} 
+        onClose={() => setShowLimitModal(false)} 
+      />
     </div>
   );
 }
