@@ -53,10 +53,11 @@ export default function GeoBlueprintPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false); // Shows typing dots between message bubbles
+  const [isTyping, setIsTyping] = useState(false);
   const [conversationState, setConversationState] = useState<any>(null);
   const [progress, setProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState('welcome');
+  const [currentModule, setCurrentModule] = useState(1);
   const [hasStarted, setHasStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [iconErrors, setIconErrors] = useState<Set<string>>(new Set());
@@ -101,8 +102,8 @@ export default function GeoBlueprintPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: message || 'start',
-          state: conversationState,
+          user_message: message || null,
+          conversation_state: conversationState,
         }),
       });
 
@@ -114,29 +115,49 @@ export default function GeoBlueprintPage() {
         return;
       }
 
-      setConversationState(data.state);
+      // Update conversation state
+      setConversationState(data.conversation_state);
       
-      // Update progress from state
-      if (data.state?.progress !== undefined) {
-        setProgress(data.state.progress);
+      // Update progress
+      if (data.progress_percent !== undefined) {
+        setProgress(data.progress_percent);
       }
       
-      // Update current phase
-      if (data.state?.phase) {
-        setCurrentPhase(data.state.phase);
+      // Update current module
+      if (data.current_module) {
+        setCurrentModule(data.current_module);
+        // Map module number to phase for sidebar
+        const moduleToPhase: Record<number, string> = {
+          1: 'welcome',
+          2: 'orientation',
+          3: 'orientation',
+          4: 'pillar_core',
+          5: 'hub_structure',
+          6: 'hub_structure',
+          7: 'schematics',
+          8: 'schematics',
+          9: 'maintenance',
+          10: 'maintenance',
+          11: 'harvest',
+          12: 'complete',
+        };
+        setCurrentPhase(moduleToPhase[data.current_module] || 'welcome');
       }
 
-      // Handle messages array from new worker (each item becomes a separate bubble with typing delay)
-      if (data.messages && Array.isArray(data.messages)) {
-        setIsLoading(false); // Turn off initial loading
+      // Handle message from worker - split by \n\n for separate bubbles
+      if (data.message) {
+        setIsLoading(false);
         
-        for (let index = 0; index < data.messages.length; index++) {
-          const content = data.messages[index];
+        // Split message by double newlines to create separate bubbles
+        const messageParts = data.message.split('\n\n').filter((part: string) => part.trim());
+        
+        for (let index = 0; index < messageParts.length; index++) {
+          const content = messageParts[index];
           
           // Show typing indicator before each message after the first
           if (index > 0) {
             setIsTyping(true);
-            await delay(800 + Math.random() * 400); // 800-1200ms delay between messages
+            await delay(800 + Math.random() * 400);
             setIsTyping(false);
           }
           
@@ -152,15 +173,6 @@ export default function GeoBlueprintPage() {
           // Brief pause to let the UI update
           await delay(100);
         }
-      } else if (data.reply) {
-        // Fallback for old worker format
-        const newMsg: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: data.reply,
-          timestamp: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, newMsg]);
       }
 
     } catch (err) {
@@ -180,6 +192,7 @@ export default function GeoBlueprintPage() {
     setConversationState(null);
     setProgress(0);
     setCurrentPhase('welcome');
+    setCurrentModule(1);
     setHasStarted(false);
     setError(null);
   };
