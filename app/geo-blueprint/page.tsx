@@ -223,7 +223,7 @@ export default function GeoBlueprintPage() {
   };
 
   return (
-    <Layout activeNav="geo-blueprint">
+    <Layout activeNav="workspace">
       <main>
         {/* Page Header */}
         <PageHeader
