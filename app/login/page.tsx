@@ -213,11 +213,11 @@ function LoginContent() {
                 className="mb-4 p-3 rounded-xl text-sm"
                 style={{ 
                   fontFamily: 'Inter',
-                  backgroundColor: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  color: '#b91c1c'
+                  fontWeight: 500,
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  color: '#dc2626'
                 }}
-                role="alert"
               >
                 {error}
               </div>
@@ -225,9 +225,19 @@ function LoginContent() {
 
             <form onSubmit={handle2FAVerify}>
               <div className="mb-6">
-                <label htmlFor="totp-code" className="sr-only">Verification Code</label>
+                <label 
+                  htmlFor="totp"
+                  className="block mb-2 text-sm"
+                  style={{ 
+                    fontFamily: 'Montserrat Alternates', 
+                    fontWeight: 500,
+                    color: '#1a1a1a'
+                  }}
+                >
+                  Verification Code
+                </label>
                 <input
-                  id="totp-code"
+                  id="totp"
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -236,10 +246,9 @@ function LoginContent() {
                   onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
                   placeholder="000000"
                   autoComplete="one-time-code"
-                  autoFocus
-                  className="w-full p-4 text-center text-2xl tracking-[0.5em] rounded-xl border-none outline-none"
+                  className="w-full p-3 rounded-xl text-center text-2xl tracking-[0.5em] border-none outline-none"
                   style={{
-                    fontFamily: 'monospace',
+                    fontFamily: 'Inter',
                     fontWeight: 600,
                     backgroundColor: '#fafafa',
                     border: '1px solid #dedede',
@@ -268,12 +277,11 @@ function LoginContent() {
                     Verifying...
                   </>
                 ) : (
-                  'Verify'
+                  'Verify & Continue'
                 )}
               </button>
             </form>
 
-            {/* Back to login link */}
             <button
               onClick={() => {
                 setRequires2FA(false);
@@ -288,25 +296,14 @@ function LoginContent() {
                 color: '#5c5652'
               }}
             >
-              ← Back to login
+              ← Back to sign in
             </button>
-
-            {/* Footer */}
-            <footer 
-              className="text-center mt-12 text-sm" 
-              style={{ fontFamily: 'Inter', fontWeight: 500, color: '#737373' }}
-            >
-              <p>
-                © {new Date().getFullYear()} Clemelopy<span aria-label=" Trademark">™</span> All Rights Reserved.
-              </p>
-            </footer>
           </div>
         </div>
       </div>
     );
   }
 
-  // Main login screen
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left side - SVG Background */}
@@ -321,14 +318,15 @@ function LoginContent() {
         style={{ backgroundColor: '#ffffff' }}
       >
         <div className="w-full max-w-md">
+          {/* Logo */}
           <div className="text-center mb-8">
             <img 
               src="/clemelopy-logo.svg" 
               alt="Clemelopy" 
-              className="h-10 mx-auto mb-6"
+              className="h-10 mx-auto mb-4"
             />
             <h1 
-              className="text-2xl mb-2"
+              className="text-2xl"
               style={{ 
                 fontFamily: 'Montserrat Alternates', 
                 fontWeight: 700,
@@ -338,23 +336,24 @@ function LoginContent() {
               Welcome Back
             </h1>
             <p 
-              className="text-sm" 
+              className="mt-2 text-sm" 
               style={{ fontFamily: 'Inter', fontWeight: 500, color: '#5c5652' }}
             >
-              Sign in to continue to your dashboard
+              Sign in to continue to your workspace
             </p>
           </div>
 
+          {/* Error Message */}
           {error && (
             <div 
               className="mb-4 p-3 rounded-xl text-sm"
               style={{ 
                 fontFamily: 'Inter',
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
-                color: '#b91c1c'
+                fontWeight: 500,
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                color: '#dc2626'
               }}
-              role="alert"
             >
               {error}
             </div>
@@ -524,14 +523,14 @@ function LoginContent() {
             </button>
           </form>
 
-          {/* Sign Up Link */}
+          {/* Sign Up Link - Now points to /subscribe */}
           <p 
             className="text-center mt-6 text-sm" 
             style={{ fontFamily: 'Inter', fontWeight: 500, color: '#5c5652' }}
           >
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <a 
-              href="/signup" 
+              href="/subscribe" 
               className="no-underline font-semibold hover:underline transition-colors"
               style={{ color: '#00A99D' }}
             >
