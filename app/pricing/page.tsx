@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import Layout from '../components/Layout';
+import PageHeader from '../components/PageHeader';
+import PageContainer from '../components/PageContainer';
 import { supabase } from '../lib/supabase';
 
 const WORKER_URL = 'https://linking-strategy-map.jen-86f.workers.dev';
@@ -10,10 +12,11 @@ const WORKER_URL = 'https://linking-strategy-map.jen-86f.workers.dev';
 export default function PricingPage() {
   const { user, session } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
-  const [isSubscriber, setIsSubscriber] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [starterBilling, setStarterBilling] = useState<'monthly' | 'yearly'>('monthly');
+  const [growthBilling, setGrowthBilling] = useState<'monthly' | 'yearly'>('monthly');
 
-  // Check if user is a subscriber
   useEffect(() => {
     const checkSubscription = async () => {
       if (!user?.email) {
@@ -24,13 +27,13 @@ export default function PricingPage() {
       try {
         const { data: license } = await supabase
           .from('licenses')
-          .select('plan, status')
+          .select('plan, status, tier')
           .eq('email', user.email)
           .single();
 
-        // User is a subscriber if they have an active subscription plan
-        const hasActiveSubscription = license?.plan === 'subscription' && license?.status === 'active';
-        setIsSubscriber(hasActiveSubscription);
+        if (license?.status === 'active') {
+          setCurrentPlan(license.tier || license.plan);
+        }
       } catch (err) {
         console.error('Error checking subscription:', err);
       } finally {
@@ -41,18 +44,13 @@ export default function PricingPage() {
     checkSubscription();
   }, [user?.email]);
 
-  const handleCheckout = async (priceType: 'monthly' | 'annual' | 'pack') => {
+  const handleCheckout = async (tier: 'starter' | 'growth', period: 'monthly' | 'yearly') => {
     if (!user || !session) {
       alert('Please sign in first');
       return;
     }
 
-    // Prevent pack purchase if not a subscriber
-    if (priceType === 'pack' && !isSubscriber) {
-      alert('Please subscribe first to purchase additional packs.');
-      return;
-    }
-
+    const priceType = `${tier}_${period}`;
     setLoading(priceType);
 
     try {
@@ -64,7 +62,7 @@ export default function PricingPage() {
         },
         body: JSON.stringify({
           priceType,
-          successUrl: `${window.location.origin}/dashboard?checkout=success`,
+          successUrl: `${window.location.origin}/workspace?checkout=success`,
           cancelUrl: `${window.location.origin}/pricing`,
         }),
       });
@@ -84,330 +82,405 @@ export default function PricingPage() {
     }
   };
 
-  // Glassmorphic card style
-  const glassCard = {
-    background: 'rgba(255, 255, 255, 0.65)',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.6)',
-    borderRadius: '24px',
-  };
+  // Toggle component
+  const BillingToggle = ({ 
+    value, 
+    onChange 
+  }: { 
+    value: 'monthly' | 'yearly'; 
+    onChange: (v: 'monthly' | 'yearly') => void;
+  }) => (
+    <div 
+      className="inline-flex items-center rounded-full p-1"
+      style={{ background: 'rgba(0, 0, 0, 0.06)' }}
+    >
+      <button
+        onClick={() => onChange('monthly')}
+        className="px-4 py-1.5 rounded-full text-sm transition-all"
+        style={{
+          fontFamily: 'Inter',
+          fontWeight: 600,
+          fontSize: '13px',
+          background: value === 'monthly' ? 'white' : 'transparent',
+          color: value === 'monthly' ? '#1a1a1a' : '#6b6560',
+          boxShadow: value === 'monthly' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+        }}
+      >
+        Monthly
+      </button>
+      <button
+        onClick={() => onChange('yearly')}
+        className="px-4 py-1.5 rounded-full text-sm transition-all"
+        style={{
+          fontFamily: 'Inter',
+          fontWeight: 600,
+          fontSize: '13px',
+          background: value === 'yearly' ? 'white' : 'transparent',
+          color: value === 'yearly' ? '#1a1a1a' : '#6b6560',
+          boxShadow: value === 'yearly' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+        }}
+      >
+        Yearly
+      </button>
+    </div>
+  );
+
+  const isCurrentPlan = (tier: string) => currentPlan === tier;
 
   return (
     <Layout activeNav="settings">
-      {/* Skip to main content link */}
-      <a 
-        href="#pricing-main" 
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-[#005a54] focus:rounded-lg focus:font-semibold"
-        style={{ fontFamily: 'Montserrat Alternates' }}
-      >
-        Skip to main content
-      </a>
+      <main>
+        <PageHeader
+          titleStart="Choose your"
+          titleEnd="plan"
+          subtitle="Optimize your content for AI-powered search engines"
+          centered={true}
+          showTour={false}
+        />
 
-      <main id="pricing-main" role="main">
-        {/* Header - Frosted Glass Container */}
-        <header 
-          className="rounded-2xl p-8 mb-8 text-center"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.7) 50%, rgba(0, 169, 157, 0.05) 100%)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.7)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-          }}
-        >
-          <h1 
-            className="text-3xl lg:text-4xl mb-2" 
-            style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700 }}
-          >
-            <span style={{ color: '#1a1a1a' }}>Choose your </span>
-            <span 
-              style={{ 
-                background: 'linear-gradient(135deg, #FAA819 0%, #E99502 50%, #00A99D 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              plan
-            </span>
-          </h1>
-          <p 
-            className="text-base max-w-2xl mx-auto"
-            style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
-          >
-            Get more GEO Linking Strategy Maps
-          </p>
-        </header>
-
-        {/* Main Glassmorphic Container */}
-        <div 
-          style={{ 
-            background: 'rgba(255, 255, 255, 0.35)', 
-            backdropFilter: 'blur(20px)', 
-            WebkitBackdropFilter: 'blur(20px)', 
-            border: '1px solid rgba(255, 255, 255, 0.4)', 
-            borderRadius: '32px', 
-            padding: '32px', 
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)' 
-          }}
-        >
-          {/* Subscription Plans */}
-          <div className={`grid ${isSubscriber ? 'md:grid-cols-1 max-w-md' : 'md:grid-cols-2 max-w-4xl'} gap-8 mx-auto`}>
-            
-            {/* Monthly Plan - Only show if NOT already a subscriber */}
-            {!isSubscriber && (
-              <section 
-                style={{ ...glassCard, border: '2px solid #0D7871', padding: '32px' }}
-                aria-labelledby="monthly-plan-heading"
+        <PageContainer>
+          {checkingSubscription ? (
+            <div className="flex items-center justify-center py-12">
+              <div
+                className="w-8 h-8 border-3 rounded-full animate-spin"
+                style={{ borderColor: 'rgba(0, 169, 157, 0.2)', borderTopColor: '#00A99D' }}
+              />
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              
+              {/* Starter Plan */}
+              <div
+                className="rounded-3xl p-8 relative"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 50%, rgba(0,169,157,0.08) 100%)',
+                  border: '2px solid #00A99D',
+                  boxShadow: '0 4px 24px rgba(0, 169, 157, 0.12)',
+                }}
               >
-                <div className="text-center mb-6">
-                  <span 
-                    className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-4"
-                    style={{ 
+                {/* Badge */}
+                <div className="flex justify-center mb-6">
+                  <span
+                    className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wide"
+                    style={{
                       background: 'rgba(0, 169, 157, 0.15)',
-                      color: '#006b63',
+                      color: '#007a70',
                       fontFamily: 'Montserrat Alternates',
                     }}
                   >
                     MOST POPULAR
                   </span>
-                  <h2 
-                    id="monthly-plan-heading"
-                    className="text-2xl mb-2"
-                    style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700, color: '#1a1a1a' }}
-                  >
-                    Monthly
-                  </h2>
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-xl line-through" style={{ fontFamily: 'Montserrat Alternates', color: '#6b6560' }}>$59</span>
-                    <span className="text-4xl font-bold" style={{ fontFamily: 'Montserrat Alternates', color: '#1a1a1a' }}>$29</span>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}>/month</span>
-                  </div>
-                  <p 
-                    className="text-sm mt-2"
-                    style={{ fontFamily: 'Inter', fontWeight: 600, color: '#0D7871' }}
-                  >
-                    🍊 Founding member pricing
-                  </p>
                 </div>
 
-                <ul className="space-y-3 mb-8" aria-label="Monthly plan features">
-                  {['Up to 8 maps per month', 'Resets every month', 'Cancel anytime', 'Access to bonus packs'].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 500, color: '#1a1a1a' }}>
-                      <svg className="w-5 h-5 shrink-0" style={{ color: '#0D7871' }} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                {/* Plan Name */}
+                <h2
+                  className="text-3xl text-center mb-2"
+                  style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700, color: '#1a1a1a' }}
+                >
+                  Starter
+                </h2>
+
+                {/* Toggle */}
+                <div className="flex justify-center mb-6">
+                  <BillingToggle value={starterBilling} onChange={setStarterBilling} />
+                </div>
+
+                {/* Pricing */}
+                <div className="text-center mb-2">
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span
+                      className="text-xl line-through"
+                      style={{ fontFamily: 'Montserrat Alternates', color: '#9ca3af' }}
+                    >
+                      ${starterBilling === 'monthly' ? '59' : '531'}
+                    </span>
+                    <span
+                      className="text-5xl"
+                      style={{ fontFamily: 'Montserrat Alternates', fontWeight: 800, color: '#1a1a1a' }}
+                    >
+                      ${starterBilling === 'monthly' ? '29' : '299'}
+                    </span>
+                    <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#6b6560', fontSize: '16px' }}>
+                      /{starterBilling === 'monthly' ? 'month' : 'year'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Beta Badge */}
+                <div className="flex justify-center mb-6">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm"
+                    style={{
+                      background: 'linear-gradient(135deg, #00A99D, #0D7871)',
+                      color: 'white',
+                      fontFamily: 'Inter',
+                      fontWeight: 600,
+                    }}
+                  >
+                    🍊 Beta pricing
+                  </span>
+                </div>
+
+                {/* Savings (yearly only) */}
+                {starterBilling === 'yearly' && (
+                  <p
+                    className="text-center text-sm mb-6"
+                    style={{ fontFamily: 'Inter', fontWeight: 600, color: '#db2777' }}
+                  >
+                    Save $49 vs monthly
+                  </p>
+                )}
+
+                {/* Divider */}
+                <div className="h-px my-6" style={{ background: 'rgba(0,0,0,0.08)' }} />
+
+                {/* Features */}
+                <ul className="space-y-4 mb-8">
+                  {[
+                    'Access to Clemelopy Workspace',
+                    'Up to 8 Linking Strategy Maps per month',
+                    '3 page audits through Orchard Audits per month',
+                    'Schema Studio access',
+                    'GA4 referral analytics tracking',
+                    'To-do list & project management',
+                    'Cancel anytime',
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <svg
+                        className="w-5 h-5 shrink-0 mt-0.5"
+                        style={{ color: '#00A99D' }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span>{item}</span>
+                      <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#1a1a1a', fontSize: '15px' }}>
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handleCheckout('monthly')}
-                  disabled={loading === 'monthly'}
-                  className="w-full py-3 rounded-xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
-                  style={{ 
-                    fontFamily: 'Montserrat Alternates',
-                    background: 'linear-gradient(135deg, #0D7871 0%, #065f5b 100%)',
-                    color: 'white',
-                    boxShadow: '0 4px 15px rgba(0, 169, 157, 0.3)',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.outline = '2px solid #005a54';
-                    e.currentTarget.style.outlineOffset = '2px';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.outline = 'none';
-                    e.currentTarget.style.outlineOffset = '0';
-                  }}
-                  aria-busy={loading === 'monthly'}
-                >
-                  {loading === 'monthly' ? 'Loading...' : 'Subscribe Now'}
-                </button>
-              </section>
-            )}
+                {/* CTA */}
+                {isCurrentPlan('starter') ? (
+                  <div
+                    className="w-full py-4 rounded-2xl text-center"
+                    style={{
+                      fontFamily: 'Montserrat Alternates',
+                      fontWeight: 600,
+                      fontSize: '16px',
+                      background: 'rgba(0, 169, 157, 0.1)',
+                      color: '#007a70',
+                      border: '2px solid rgba(0, 169, 157, 0.3)',
+                    }}
+                  >
+                    ✓ Current Plan
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleCheckout('starter', starterBilling)}
+                    disabled={loading === `starter_${starterBilling}`}
+                    className="w-full py-4 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
+                    style={{
+                      fontFamily: 'Montserrat Alternates',
+                      fontSize: '16px',
+                      background: 'linear-gradient(135deg, #00A99D 0%, #0D7871 100%)',
+                      color: 'white',
+                      boxShadow: '0 4px 15px rgba(0, 169, 157, 0.35)',
+                    }}
+                  >
+                    {loading === `starter_${starterBilling}` ? (
+                      <>
+                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Loading...
+                      </>
+                    ) : (
+                      'Subscribe Now'
+                    )}
+                  </button>
+                )}
+              </div>
 
-            {/* Annual Plan - Only show if NOT already a subscriber */}
-            {!isSubscriber && (
-              <section 
-                style={{ ...glassCard, padding: '32px' }}
-                aria-labelledby="annual-plan-heading"
+              {/* Growth Plan */}
+              <div
+                className="rounded-3xl p-8 relative"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 50%, rgba(250,168,25,0.08) 100%)',
+                  border: '2px solid #FAA819',
+                  boxShadow: '0 4px 24px rgba(250, 168, 25, 0.15)',
+                }}
               >
-                <div className="text-center mb-6">
-                  <span 
-                    className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-4"
-                    style={{ 
-                      background: 'rgba(219, 39, 119, 0.15)',
-                      color: '#db2777',
+                {/* Badge */}
+                <div className="flex justify-center mb-6">
+                  <span
+                    className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wide"
+                    style={{
+                      background: 'linear-gradient(135deg, #FAA819, #E99502)',
+                      color: 'white',
                       fontFamily: 'Montserrat Alternates',
                     }}
                   >
                     BEST VALUE
                   </span>
-                  <h2 
-                    id="annual-plan-heading"
-                    className="text-2xl mb-2"
-                    style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700, color: '#1a1a1a' }}
-                  >
-                    Annual
-                  </h2>
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-xl line-through" style={{ fontFamily: 'Montserrat Alternates', color: '#6b6560' }}>$531</span>
-                    <span className="text-4xl font-bold" style={{ fontFamily: 'Montserrat Alternates', color: '#1a1a1a' }}>$299</span>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}>/year</span>
-                  </div>
-                  <p 
-                    className="text-sm mt-2"
-                    style={{ fontFamily: 'Inter', fontWeight: 600, color: '#db2777' }}
-                  >
-                    Save $49 vs monthly
-                  </p>
                 </div>
 
-                <ul className="space-y-3 mb-8" aria-label="Annual plan features">
-                  {['Up to 8 maps per month', 'Billed annually', 'Cancel anytime', 'Access to bonus packs'].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 500, color: '#1a1a1a' }}>
-                      <svg className="w-5 h-5 shrink-0" style={{ color: '#db2777' }} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handleCheckout('annual')}
-                  disabled={loading === 'annual'}
-                  className="w-full py-3 rounded-xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
-                  style={{ 
-                    fontFamily: 'Montserrat Alternates',
-                    background: 'linear-gradient(135deg, #FAA819 0%, #E99502 100%)',
-                    color: 'white',
-                    boxShadow: '0 4px 15px rgba(250, 168, 25, 0.3)',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.outline = '2px solid #005a54';
-                    e.currentTarget.style.outlineOffset = '2px';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.outline = 'none';
-                    e.currentTarget.style.outlineOffset = '0';
-                  }}
-                  aria-busy={loading === 'annual'}
+                {/* Plan Name */}
+                <h2
+                  className="text-3xl text-center mb-2"
+                  style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700, color: '#1a1a1a' }}
                 >
-                  {loading === 'annual' ? 'Loading...' : 'Subscribe Now'}
-                </button>
-              </section>
-            )}
+                  Growth
+                </h2>
 
-            {/* 5-Pack - Only show for SUBSCRIBERS */}
-            {isSubscriber && (
-              <section 
-                style={{ ...glassCard, padding: '32px' }}
-                aria-labelledby="pack-plan-heading"
-              >
-                <div className="text-center mb-6">
-                  <span 
-                    className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-4"
-                    style={{ 
-                      background: 'rgba(124, 58, 237, 0.15)',
-                      color: '#7c3aed',
-                      fontFamily: 'Montserrat Alternates',
+                {/* Toggle */}
+                <div className="flex justify-center mb-6">
+                  <BillingToggle value={growthBilling} onChange={setGrowthBilling} />
+                </div>
+
+                {/* Pricing */}
+                <div className="text-center mb-2">
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span
+                      className="text-xl line-through"
+                      style={{ fontFamily: 'Montserrat Alternates', color: '#9ca3af' }}
+                    >
+                      ${growthBilling === 'monthly' ? '149' : '1,490'}
+                    </span>
+                    <span
+                      className="text-5xl"
+                      style={{ fontFamily: 'Montserrat Alternates', fontWeight: 800, color: '#1a1a1a' }}
+                    >
+                      ${growthBilling === 'monthly' ? '79' : '849'}
+                    </span>
+                    <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#6b6560', fontSize: '16px' }}>
+                      /{growthBilling === 'monthly' ? 'month' : 'year'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Beta Badge */}
+                <div className="flex justify-center mb-6">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm"
+                    style={{
+                      background: 'linear-gradient(135deg, #FAA819, #E99502)',
+                      color: 'white',
+                      fontFamily: 'Inter',
+                      fontWeight: 600,
                     }}
                   >
-                    SUBSCRIBER BONUS
+                    🍊 Beta pricing
                   </span>
-                  <h2 
-                    id="pack-plan-heading"
-                    className="text-2xl mb-2"
-                    style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700, color: '#1a1a1a' }}
-                  >
-                    5-Pack Add-On
-                  </h2>
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-xl line-through" style={{ fontFamily: 'Montserrat Alternates', color: '#6b6560' }}>$24</span>
-                    <span className="text-4xl font-bold" style={{ fontFamily: 'Montserrat Alternates', color: '#1a1a1a' }}>$19</span>
-                    <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}>one-time</span>
-                  </div>
-                  <p 
-                    className="text-sm mt-2"
-                    style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
-                  >
-                    Need extra maps this month?
-                  </p>
                 </div>
 
-                <ul className="space-y-3 mb-8" aria-label="5-Pack features">
-                  {['5 additional map credits', 'Never expires', 'Stack with other packs'].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2" style={{ fontFamily: 'Inter', fontWeight: 500, color: '#1a1a1a' }}>
-                      <svg className="w-5 h-5 shrink-0" style={{ color: '#7c3aed' }} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                {/* Savings (yearly only) */}
+                {growthBilling === 'yearly' && (
+                  <p
+                    className="text-center text-sm mb-6"
+                    style={{ fontFamily: 'Inter', fontWeight: 600, color: '#db2777' }}
+                  >
+                    Save $99 vs monthly
+                  </p>
+                )}
+
+                {/* Divider */}
+                <div className="h-px my-6" style={{ background: 'rgba(0,0,0,0.08)' }} />
+
+                {/* Features */}
+                <ul className="space-y-4 mb-8">
+                  {[
+                    'Access to Clemelopy Workspace',
+                    'Up to 15 Linking Strategy Maps per month',
+                    '1 full site Orchard Audit per month',
+                    'Schema Studio access',
+                    'GA4 referral analytics tracking',
+                    'To-do list & project management',
+                    'Cancel anytime',
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <svg
+                        className="w-5 h-5 shrink-0 mt-0.5"
+                        style={{ color: '#FAA819' }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span>{item}</span>
+                      <span style={{ fontFamily: 'Inter', fontWeight: 500, color: '#1a1a1a', fontSize: '15px' }}>
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handleCheckout('pack')}
-                  disabled={loading === 'pack'}
-                  className="w-full py-3 rounded-xl font-semibold transition-all disabled:opacity-50 hover:scale-105"
-                  style={{ 
-                    fontFamily: 'Montserrat Alternates',
-                    background: 'linear-gradient(135deg, #FAA819 0%, #E99502 100%)',
-                    color: 'white',
-                    boxShadow: '0 4px 15px rgba(250, 168, 25, 0.3)',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.outline = '2px solid #005a54';
-                    e.currentTarget.style.outlineOffset = '2px';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.outline = 'none';
-                    e.currentTarget.style.outlineOffset = '0';
-                  }}
-                  aria-busy={loading === 'pack'}
-                >
-                  {loading === 'pack' ? 'Loading...' : 'Buy 5-Pack'}
-                </button>
-              </section>
-            )}
-          </div>
+                {/* CTA */}
+                {isCurrentPlan('growth') ? (
+                  <div
+                    className="w-full py-4 rounded-2xl text-center"
+                    style={{
+                      fontFamily: 'Montserrat Alternates',
+                      fontWeight: 600,
+                      fontSize: '16px',
+                      background: 'rgba(250, 168, 25, 0.1)',
+                      color: '#b37400',
+                      border: '2px solid rgba(250, 168, 25, 0.3)',
+                    }}
+                  >
+                    ✓ Current Plan
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleCheckout('growth', growthBilling)}
+                    disabled={loading === `growth_${growthBilling}`}
+                    className="w-full py-4 rounded-2xl font-semibold transition-all disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] flex items-center justify-center gap-2"
+                    style={{
+                      fontFamily: 'Montserrat Alternates',
+                      fontSize: '16px',
+                      background: 'linear-gradient(135deg, #FAA819 0%, #E99502 100%)',
+                      color: 'white',
+                      boxShadow: '0 4px 15px rgba(250, 168, 25, 0.35)',
+                    }}
+                  >
+                    {loading === `growth_${growthBilling}` ? (
+                      <>
+                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Loading...
+                      </>
+                    ) : (
+                      'Subscribe Now'
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Already subscribed message */}
-          {isSubscriber && (
-            <div 
-              className="mt-8 text-center p-4 rounded-xl"
+          {currentPlan && (
+            <div
+              className="mt-8 text-center p-4 rounded-xl max-w-md mx-auto"
               style={{
                 background: 'rgba(0, 169, 157, 0.1)',
                 border: '1px solid rgba(0, 169, 157, 0.2)',
               }}
             >
               <p style={{ fontFamily: 'Inter', fontWeight: 500, color: '#0D7871' }}>
-                ✓ You're a subscriber! Purchase additional packs above if you need more maps this month.
+                ✓ You're on the {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} plan.{' '}
+                <a href="/settings" className="underline hover:no-underline">
+                  Manage subscription
+                </a>
               </p>
             </div>
           )}
-
-          {/* Pack teaser for non-subscribers */}
-          {!isSubscriber && !checkingSubscription && (
-            <div 
-              className="mt-8 text-center p-6 rounded-xl"
-              style={{
-                background: 'rgba(255, 255, 255, 0.7)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.6)',
-                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)',
-              }}
-            >
-              <p style={{ fontFamily: 'Inter', fontWeight: 500, color: '#1a1a1a' }}>
-                🍊 <strong style={{ color: '#1a1a1a' }}>Subscribers get access to bonus 5-packs</strong> — extra maps when you need them!
-              </p>
-            </div>
-          )}
-        </div>
+        </PageContainer>
       </main>
     </Layout>
   );

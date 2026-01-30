@@ -765,3 +765,369 @@
      }
    }
    
+   /* ============================================ */
+/* MARKETING NAVIGATION (for Navigation.tsx)   */
+/* Scoped to .marketing-nav to avoid conflicts */
+/* with app sidebar                            */
+/* ============================================ */
+
+.marketing-nav {
+  position: relative;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 -1px 0 rgba(0, 0, 0, 0.05);
+}
+
+.marketing-nav::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 350px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 40%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.marketing-nav .nav-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 40px;
+  position: relative;
+  z-index: 2;
+}
+
+.marketing-nav .logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  height: 32px;
+}
+
+.marketing-nav .logo img { 
+  height: 100%; 
+  width: auto; 
+}
+
+.marketing-nav .nav-center {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.marketing-nav .nav-center a {
+  color: var(--text-primary, #2d2a26);
+  text-decoration: none;
+  font-family: 'Montserrat Alternates', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.marketing-nav .nav-center a:hover { 
+  color: var(--clemelopy-teal, #00A99D); 
+}
+
+.marketing-nav .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.marketing-nav .nav-login {
+  color: var(--text-primary, #2d2a26);
+  text-decoration: none;
+  font-family: 'Montserrat Alternates', sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  transition: all 0.2s;
+}
+
+.marketing-nav .nav-login:hover { 
+  border-color: var(--clemelopy-teal, #00A99D); 
+  color: var(--clemelopy-teal, #00A99D); 
+}
+
+.marketing-nav .nav-cta {
+  color: white;
+  text-decoration: none;
+  font-family: 'Montserrat Alternates', sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--clemelopy-teal, #00A99D);
+  transition: all 0.2s;
+}
+
+.marketing-nav .nav-cta:hover { 
+  background: var(--clemelopy-teal-dark, #0D7871); 
+}
+
+/* Hamburger Button */
+.marketing-nav .hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  z-index: 1001;
+}
+
+.marketing-nav .hamburger-btn span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--text-primary, #2d2a26);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.marketing-nav .hamburger-btn.open span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.marketing-nav .hamburger-btn.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.marketing-nav .hamburger-btn.open span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Mobile Menu */
+.marketing-nav .mobile-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  flex-direction: column;
+  gap: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.marketing-nav .mobile-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.marketing-nav .mobile-menu a {
+  display: block;
+  color: var(--text-primary, #2d2a26);
+  text-decoration: none;
+  font-family: 'Montserrat Alternates', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transition: color 0.2s;
+}
+
+.marketing-nav .mobile-menu a:hover {
+  color: var(--clemelopy-teal, #00A99D);
+}
+
+.marketing-nav .mobile-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 10px;
+}
+
+.marketing-nav .mobile-menu-buttons .nav-login,
+.marketing-nav .mobile-menu-buttons .nav-cta {
+  text-align: center;
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .marketing-nav .hamburger-btn {
+    display: flex;
+  }
+  
+  .marketing-nav .nav-center,
+  .marketing-nav .nav-right {
+    display: none !important;
+  }
+  
+  .marketing-nav .mobile-menu {
+    display: flex;
+  }
+  
+  .marketing-nav .nav-container {
+    padding: 14px 20px;
+  }
+}
+
+/* ============================================ */
+/* MARKETING FOOTER (for Footer.tsx)           */
+/* Scoped to .marketing-footer                 */
+/* ============================================ */
+
+.marketing-footer {
+  background: #004d47;
+  padding: 60px 40px 30px;
+  border-top: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1), 0 -2px 0 rgba(255, 255, 255, 0.3) inset;
+}
+
+.marketing-footer .footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.marketing-footer .footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 60px;
+  margin-bottom: 50px;
+}
+
+.marketing-footer .footer-brand .logo {
+  margin-bottom: 16px;
+  height: 28px;
+}
+
+.marketing-footer .footer-brand p {
+  color: rgba(255,255,255,0.85);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 280px;
+}
+
+.marketing-footer .footer-social {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.marketing-footer .footer-social a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: white;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.marketing-footer .footer-social a:hover {
+  color: var(--clemelopy-orange, #FAA819);
+  transform: translateY(-2px);
+}
+
+.marketing-footer .footer-social svg {
+  width: 22px;
+  height: 22px;
+}
+
+.marketing-footer .footer-column h4 {
+  color: white;
+  font-family: 'Montserrat Alternates', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.marketing-footer .footer-column a {
+  display: block;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  transition: color 0.2s;
+}
+
+.marketing-footer .footer-column a:hover { 
+  color: var(--clemelopy-orange, #FAA819); 
+}
+
+.marketing-footer .footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.marketing-footer .footer-bottom p {
+  color: white;
+  font-family: 'Montserrat Alternates', sans-serif;
+  font-size: 0.85rem;
+}
+
+.marketing-footer .footer-bottom a {
+  color: white;
+  font-family: 'Montserrat Alternates', sans-serif;
+  text-decoration: none;
+  font-size: 0.85rem;
+  margin-left: 24px;
+  transition: color 0.2s;
+}
+
+.marketing-footer .footer-bottom a:hover { 
+  color: var(--clemelopy-orange, #FAA819); 
+}
+
+/* Footer Responsive */
+@media (max-width: 1024px) {
+  .marketing-footer .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .marketing-footer {
+    padding: 40px 20px 24px;
+  }
+
+  .marketing-footer .footer-grid { 
+    grid-template-columns: 1fr; 
+    gap: 30px; 
+  }
+  
+  .marketing-footer .footer-bottom { 
+    flex-direction: column; 
+    gap: 16px; 
+    text-align: center; 
+  }
+  
+  .marketing-footer .footer-bottom a { 
+    margin-left: 0;
+    margin: 4px 8px;
+    display: inline-block;
+  }
+}

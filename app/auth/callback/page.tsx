@@ -91,41 +91,6 @@ export default function AuthCallback() {
         }
       }
 
-      // Initialize license (handles free trial eligibility check atomically)
-      setStatusMessage('Preparing your workspace...');
-      
-      try {
-        const response = await fetch('/api/auth/init-license', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('License init error:', errorData);
-          // Don't block - let them continue (they just might not get free runs)
-        } else {
-          const licenseData = await response.json();
-          console.log('License initialized:', {
-            status: licenseData.status,
-            runsGranted: licenseData.free_trial?.runs,
-          });
-          
-          // Could show a toast/notification about free runs here
-          if (licenseData.free_trial?.granted) {
-            console.log(`🎉 ${licenseData.free_trial.runs} free runs granted!`);
-          } else if (licenseData.free_trial?.message) {
-            console.log('Free trial status:', licenseData.free_trial.message);
-          }
-        }
-      } catch (err) {
-        console.error('License init fetch error:', err);
-        // Don't block - let them continue
-      }
-
       // Redirect based on onboarding status
       setStatusMessage('Almost there...');
       
