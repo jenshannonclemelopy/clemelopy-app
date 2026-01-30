@@ -8,7 +8,8 @@ export default function SubscribePage() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [betaTermsAccepted, setBetaTermsAccepted] = useState(false);
-  const [showTermsError, setShowTermsError] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<'starter' | 'growth' | null>(null);
 
   const prices = {
     starter: { monthly: 29, yearly: 276, originalMonthly: 59, originalYearly: 531 },
@@ -17,10 +18,15 @@ export default function SubscribePage() {
 
   const handleCheckout = async (plan: 'starter' | 'growth') => {
     if (!betaTermsAccepted) {
-      setShowTermsError(true);
+      setPendingPlan(plan);
+      setShowTermsModal(true);
       return;
     }
-    setShowTermsError(false);
+    
+    proceedToCheckout(plan);
+  };
+
+  const proceedToCheckout = async (plan: 'starter' | 'growth') => {
     setLoading(plan);
 
     try {
@@ -695,59 +701,6 @@ export default function SubscribePage() {
               </tbody>
             </table>
           </div>
-
-          {/* Beta Terms Checkbox */}
-          <div style={{
-            background: 'rgba(0, 169, 157, 0.06)',
-            borderRadius: '12px',
-            padding: '20px 24px',
-            border: '1px solid rgba(0, 169, 157, 0.15)',
-            maxWidth: '700px',
-            margin: '0 auto',
-          }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={betaTermsAccepted}
-                onChange={(e) => {
-                  setBetaTermsAccepted(e.target.checked);
-                  if (e.target.checked) setShowTermsError(false);
-                }}
-                style={{
-                  width: '22px',
-                  height: '22px',
-                  marginTop: '0',
-                  accentColor: '#00A99D',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{
-                fontSize: '0.95rem',
-                color: '#2d2a26',
-                lineHeight: 1.6,
-              }}>
-                <strong>I understand this is a beta product</strong> and agree to the beta terms. My founding member pricing is locked in as long as my subscription stays active.
-              </span>
-            </label>
-
-            {showTermsError && (
-              <p style={{
-                marginTop: '12px',
-                marginLeft: '36px',
-                fontSize: '0.85rem',
-                color: '#dc2626',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}>
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                Please accept the beta terms to continue
-              </p>
-            )}
-          </div>
         </div>
       </section>
 
@@ -777,6 +730,199 @@ export default function SubscribePage() {
       </section>
 
       <Footer />
+
+      {/* BETA TERMS MODAL */}
+      {showTermsModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+          onClick={() => setShowTermsModal(false)}
+        >
+          <div 
+            style={{
+              background: 'white',
+              borderRadius: '24px',
+              padding: '32px',
+              maxWidth: '480px',
+              width: '100%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div 
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #FAA819 0%, #E99502 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                  boxShadow: '0 8px 24px rgba(250, 168, 25, 0.3)',
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: '32px', height: '32px' }}>
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <h3 style={{
+                fontFamily: "'Montserrat Alternates', sans-serif",
+                fontSize: '1.5rem',
+                fontWeight: 700,
+                color: '#2d2a26',
+                marginBottom: '8px',
+              }}>
+                One Quick Thing! 🍊
+              </h3>
+              <p style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '0.95rem',
+                color: '#666',
+                lineHeight: 1.6,
+              }}>
+                Please review and accept the beta terms to continue.
+              </p>
+            </div>
+
+            {/* Terms Content */}
+            <div style={{
+              background: '#fffaf3',
+              borderRadius: '16px',
+              padding: '20px',
+              marginBottom: '24px',
+            }}>
+              <p style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '0.9rem',
+                color: '#2d2a26',
+                lineHeight: 1.7,
+                marginBottom: '16px',
+              }}>
+                I understand this is a <strong>beta product</strong> and agree to the{' '}
+                <a 
+                  href="https://clemelopy.com/terms" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: '#00A99D', textDecoration: 'underline' }}
+                >
+                  beta terms
+                </a>.
+              </p>
+              <p style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '0.9rem',
+                color: '#2d2a26',
+                lineHeight: 1.7,
+                margin: 0,
+              }}>
+                My <strong>founding member pricing is locked in</strong> as long as my subscription stays active.
+              </p>
+            </div>
+
+            {/* Checkbox */}
+            <label style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              cursor: 'pointer',
+              marginBottom: '24px',
+              padding: '16px',
+              background: betaTermsAccepted ? 'rgba(0, 169, 157, 0.08)' : 'transparent',
+              borderRadius: '12px',
+              border: betaTermsAccepted ? '2px solid #00A99D' : '2px solid #e0e0e0',
+              transition: 'all 0.2s',
+            }}>
+              <input
+                type="checkbox"
+                checked={betaTermsAccepted}
+                onChange={(e) => setBetaTermsAccepted(e.target.checked)}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  accentColor: '#00A99D',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                color: '#2d2a26',
+              }}>
+                I agree to the beta terms and understand my pricing is locked in
+              </span>
+            </label>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => {
+                  setShowTermsModal(false);
+                  setPendingPlan(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '14px 24px',
+                  borderRadius: '12px',
+                  border: '1px solid #e0e0e0',
+                  background: 'white',
+                  fontFamily: "'Montserrat Alternates', sans-serif",
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  color: '#666',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (betaTermsAccepted && pendingPlan) {
+                    setShowTermsModal(false);
+                    proceedToCheckout(pendingPlan);
+                  }
+                }}
+                disabled={!betaTermsAccepted}
+                style={{
+                  flex: 1,
+                  padding: '14px 24px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: betaTermsAccepted 
+                    ? 'linear-gradient(135deg, #00A99D 0%, #0D7871 100%)' 
+                    : '#e0e0e0',
+                  fontFamily: "'Montserrat Alternates', sans-serif",
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  color: betaTermsAccepted ? 'white' : '#999',
+                  cursor: betaTermsAccepted ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.2s',
+                  boxShadow: betaTermsAccepted ? '0 4px 15px rgba(0, 169, 157, 0.3)' : 'none',
+                }}
+              >
+                Continue to Checkout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'https://linking-strategy-map.jen-86f.workers.dev';
-
 // Price IDs for different plans
 const PRICE_IDS: Record<string, string> = {
   starter_monthly: 'price_1SkuFnF55HwzD2U94EbwwuHL',
@@ -41,13 +39,10 @@ export async function POST(request: NextRequest) {
     formData.set('line_items[0][price]', priceId);
     formData.set('line_items[0][quantity]', '1');
     
-    // Let Stripe collect the email
-    formData.set('customer_creation', 'always');
-    
     // Store plan info in metadata for the webhook
-    formData.set('metadata[plan]', plan);
-    formData.set('metadata[interval]', interval);
-    formData.set('metadata[source]', 'beta_signup');
+    formData.set('subscription_data[metadata][plan]', plan);
+    formData.set('subscription_data[metadata][interval]', interval);
+    formData.set('subscription_data[metadata][source]', 'beta_signup');
     
     // Allow promotion codes if you have any
     formData.set('allow_promotion_codes', 'true');
