@@ -12,8 +12,8 @@ export default function SubscribePage() {
   const [pendingPlan, setPendingPlan] = useState<'starter' | 'growth' | null>(null);
 
   const prices = {
-    starter: { monthly: 29, yearly: 276, originalMonthly: 59, originalYearly: 531 },
-    growth: { monthly: 79, yearly: 756, originalMonthly: 149, originalYearly: 1490 },
+    starter: { monthly: 29, yearly: 299, originalMonthly: 59, originalYearly: 531 },
+    growth: { monthly: 79, yearly: 849, originalMonthly: 149, originalYearly: 1490 },
   };
 
   const handleCheckout = async (plan: 'starter' | 'growth') => {
@@ -192,7 +192,7 @@ export default function SubscribePage() {
                       padding: '2px 5px',
                       borderRadius: '100px',
                     }}>
-                      Save 20%
+                      Save 14%
                     </span>
                   </button>
                 </div>
