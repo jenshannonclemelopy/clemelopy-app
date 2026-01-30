@@ -103,10 +103,10 @@ export default function SubscribePage() {
             
             {/* STARTER PLAN */}
             <div style={{
-              background: 'linear-gradient(135deg, #F97316 0%, #FB923C 50%, #FCD34D 100%)',
+              background: 'linear-gradient(135deg, #ff6b6b 0%, #faa819 100%)',
               borderRadius: '20px',
               overflow: 'hidden',
-              boxShadow: '0 4px 24px rgba(249, 115, 22, 0.25)',
+              boxShadow: '0 4px 24px rgba(255, 107, 107, 0.25)',
               color: 'white',
             }}>
               <div style={{ padding: '24px 28px 20px' }}>
@@ -294,10 +294,10 @@ export default function SubscribePage() {
 
             {/* GROWTH PLAN */}
             <div style={{
-              background: 'linear-gradient(135deg, #A855F7 0%, #EC4899 50%, #F472B6 100%)',
+              background: 'linear-gradient(135deg, #721590 0%, #ff5da7 100%)',
               borderRadius: '20px',
               overflow: 'hidden',
-              boxShadow: '0 4px 24px rgba(168, 85, 247, 0.25)',
+              boxShadow: '0 4px 24px rgba(114, 21, 144, 0.25)',
               color: 'white',
             }}>
               <div style={{ padding: '24px 28px 20px' }}>
