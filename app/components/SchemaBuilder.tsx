@@ -637,6 +637,17 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
       (generatedSchema ? `<script type="application/ld+json">\n${JSON.stringify(generatedSchema, null, 2)}\n</script>` : '');
     
     if (!script) return '';
+
+    // For Raw JSON, extract just the JSON object without script tags
+    if (format === 'json') {
+      // Extract JSON from script tag if present
+      const jsonMatch = script.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+      if (jsonMatch) {
+        return jsonMatch[1].trim();
+      }
+      // If no script tags, return as-is (shouldn't happen, but fallback)
+      return script;
+    }
     
     switch (format) {
       case 'squarespace':
@@ -960,6 +971,7 @@ ${script}`;
           <div className="flex flex-wrap gap-2">
             {[
               { key: 'raw', label: '📄 Raw HTML' },
+              { key: 'json', label: '{ } Raw JSON' },
               { key: 'squarespace', label: 'Squarespace' },
               { key: 'wordpress', label: 'WordPress' },
               { key: 'webflow', label: 'Webflow' },
@@ -982,7 +994,7 @@ ${script}`;
         </div>
 
         {/* CMS-specific instructions box */}
-        {exportFormat !== 'raw' && (
+        {exportFormat !== 'raw' && exportFormat !== 'json' && (
           <div className="mb-5 p-4 bg-[#FAA819]/10 border border-[#FAA819]/30 rounded-xl">
             <h4 className="font-semibold text-[#4a4642] mb-2 flex items-center gap-2">
               <span className="text-lg">📍</span> 
@@ -1015,6 +1027,30 @@ ${script}`;
                 Go to <strong>Settings → Custom Code</strong> (or Site Settings → Tracking & Analytics → Custom), add new code to the <strong>Head</strong> section.
               </p>
             )}
+          </div>
+        )}
+
+        {/* Raw JSON instructions box */}
+        {exportFormat === 'json' && (
+          <div className="mb-5 p-4 bg-[#00A99D]/10 border border-[#00A99D]/30 rounded-xl">
+            <h4 className="font-semibold text-[#4a4642] mb-2 flex items-center gap-2">
+              <span className="text-lg">⚛️</span> 
+              For Next.js / React:
+            </h4>
+            <div className="text-sm text-gray-600">
+              <p className="mb-2">Paste this JSON object into your component:</p>
+              <pre className="bg-white/50 p-2 rounded text-xs overflow-x-auto mb-2">
+                <code>{`const schemaMarkup = { /* paste here */ };`}</code>
+              </pre>
+              <p>Then use with the Next.js Script component:</p>
+              <pre className="bg-white/50 p-2 rounded text-xs overflow-x-auto mt-1">
+                <code>{`<Script
+  id="page-schema"
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaMarkup) }}
+/>`}</code>
+              </pre>
+            </div>
           </div>
         )}
 
