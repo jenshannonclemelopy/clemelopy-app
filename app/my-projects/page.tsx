@@ -44,10 +44,9 @@ export default function MyProjects() {
   const [copiedSchemaId, setCopiedSchemaId] = useState<string | null>(null);
   const [deletingSchemaId, setDeletingSchemaId] = useState<string | null>(null);
   
-  // Copy modal state
-  const [showCopyModal, setShowCopyModal] = useState(false);
-  const [selectedSchema, setSelectedSchema] = useState<SchemaProject | null>(null);
-  const [selectedExportFormat, setSelectedExportFormat] = useState('raw');
+  // Accordion state - tracks which schema is expanded
+  const [expandedSchemaId, setExpandedSchemaId] = useState<string | null>(null);
+  const [selectedExportFormat, setSelectedExportFormat] = useState<Record<string, string>>({});
 
   // Fetch projects from the worker
   useEffect(() => {
@@ -166,10 +165,8 @@ export default function MyProjects() {
   };
 
   // Schema actions
-  const openCopyModal = (schema: SchemaProject) => {
-    setSelectedSchema(schema);
-    setSelectedExportFormat('raw');
-    setShowCopyModal(true);
+  const toggleAccordion = (schemaId: string) => {
+    setExpandedSchemaId(expandedSchemaId === schemaId ? null : schemaId);
   };
 
   const formatSchemaForExport = (script: string, format: string): string => {
@@ -230,20 +227,16 @@ ${script}`;
     }
   };
 
-  const copySchemaWithFormat = async () => {
-    if (!selectedSchema) return;
-    
-    const formattedScript = formatSchemaForExport(selectedSchema.schema_script, selectedExportFormat);
+  const copySchemaWithFormat = async (schema: SchemaProject) => {
+    const format = selectedExportFormat[schema.id] || 'raw';
+    const formattedScript = formatSchemaForExport(schema.schema_script, format);
     await navigator.clipboard.writeText(formattedScript);
-    setCopiedSchemaId(selectedSchema.id);
-    setShowCopyModal(false);
+    setCopiedSchemaId(schema.id);
     setTimeout(() => setCopiedSchemaId(null), 2000);
   };
 
-  const copySchema = async (id: string, script: string) => {
-    await navigator.clipboard.writeText(script);
-    setCopiedSchemaId(id);
-    setTimeout(() => setCopiedSchemaId(null), 2000);
+  const setExportFormatForSchema = (schemaId: string, format: string) => {
+    setSelectedExportFormat(prev => ({ ...prev, [schemaId]: format }));
   };
 
   const deleteSchema = async (id: string) => {
@@ -761,7 +754,6 @@ ${script}`;
                 {filteredSchemas.map((schema) => (
                   <div 
                     key={schema.id}
-                    className="flex items-center gap-4 p-4"
                     style={{
                       background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.7) 50%, rgba(250, 168, 25, 0.03) 100%)',
                       backdropFilter: 'blur(12px)',
@@ -769,107 +761,192 @@ ${script}`;
                       border: '1px solid rgba(255, 255, 255, 0.7)',
                       borderRadius: '16px',
                       transition: 'all 0.3s ease',
+                      overflow: 'hidden',
                     }}
                   >
-                    {/* Icon */}
+                    {/* Accordion Header */}
                     <div 
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                      style={{ background: 'linear-gradient(135deg, rgba(250, 168, 25, 0.2), rgba(0, 169, 157, 0.2))' }}
+                      className="flex items-center gap-4 p-4 cursor-pointer"
+                      onClick={() => toggleAccordion(schema.id)}
                     >
-                      {getSchemaTypeEmoji(schema.schema_type)}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 
-                        className="font-semibold truncate"
-                        style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
+                      {/* Icon */}
+                      <div 
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+                        style={{ background: 'linear-gradient(135deg, rgba(250, 168, 25, 0.2), rgba(0, 169, 157, 0.2))' }}
                       >
-                        {schema.page_title || 'Untitled Page'}
-                      </h3>
-                      <p 
-                        className="text-sm truncate"
+                        {getSchemaTypeEmoji(schema.schema_type)}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 
+                          className="font-semibold truncate"
+                          style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600, color: '#1a1a1a' }}
+                        >
+                          {schema.page_title || 'Untitled Page'}
+                        </h3>
+                        <p 
+                          className="text-sm truncate"
+                          style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
+                        >
+                          {schema.url}
+                        </p>
+                      </div>
+
+                      {/* Type Badge */}
+                      <div 
+                        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs shrink-0"
+                        style={{ 
+                          background: 'rgba(0, 169, 157, 0.1)', 
+                          color: '#005a54',
+                          fontFamily: 'Montserrat Alternates',
+                          fontWeight: 500,
+                        }}
+                      >
+                        <span className="capitalize">{schema.schema_type}</span>
+                      </div>
+
+                      {/* Date */}
+                      <span 
+                        className="hidden md:block text-sm shrink-0"
                         style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
                       >
-                        {schema.url}
-                      </p>
-                    </div>
+                        {formatDate(schema.created_at)}
+                      </span>
 
-                    {/* Type Badge */}
-                    <div 
-                      className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs shrink-0"
-                      style={{ 
-                        background: 'rgba(0, 169, 157, 0.1)', 
-                        color: '#005a54',
-                        fontFamily: 'Montserrat Alternates',
-                        fontWeight: 500,
-                      }}
-                    >
-                      <span className="capitalize">{schema.schema_type}</span>
-                    </div>
-
-                    {/* Date */}
-                    <span 
-                      className="hidden md:block text-sm shrink-0"
-                      style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
-                    >
-                      {formatDate(schema.created_at)}
-                    </span>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => openCopyModal(schema)}
-                        className="py-2 px-4 rounded-lg text-sm flex items-center gap-1.5"
-                        style={{ 
-                          fontFamily: 'Montserrat Alternates',
-                          fontWeight: 500,
-                          background: copiedSchemaId === schema.id 
-                            ? 'rgba(16, 185, 129, 0.2)' 
-                            : 'linear-gradient(135deg, #00A99D, #0D7871)',
-                          color: copiedSchemaId === schema.id ? '#065f46' : 'white',
-                          transition: 'all 0.3s ease',
-                        }}
-                      >
-                        {copiedSchemaId === schema.id ? '✓ Copied!' : '📋 Copy'}
-                      </button>
-                      <a
-                        href={`/tools/schema-studio?edit=${schema.id}`}
-                        className="py-2 px-4 rounded-lg text-sm flex items-center gap-1.5"
-                        style={{ 
-                          fontFamily: 'Montserrat Alternates',
-                          fontWeight: 500,
-                          background: 'rgba(255, 255, 255, 0.6)',
-                          border: '1px solid rgba(0, 169, 157, 0.3)',
-                          color: '#005a54',
-                          transition: 'all 0.3s ease',
-                        }}
-                      >
-                        ✏️ Edit
-                      </a>
-                      <button
-                        onClick={() => deleteSchema(schema.id)}
-                        disabled={deletingSchemaId === schema.id}
-                        className="p-2 rounded-lg disabled:opacity-50"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.6)',
-                          border: '1px solid rgba(255, 255, 255, 0.7)',
-                          color: '#4a4642',
-                          transition: 'all 0.3s ease',
-                        }}
-                      >
-                        {deletingSchemaId === schema.id ? (
-                          <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      {/* Expand/Collapse Icon & Delete */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteSchema(schema.id);
+                          }}
+                          disabled={deletingSchemaId === schema.id}
+                          className="p-2 rounded-lg disabled:opacity-50 hover:bg-white/50"
+                          style={{
+                            color: '#4a4642',
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          {deletingSchemaId === schema.id ? (
+                            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          )}
+                        </button>
+                        <div 
+                          className="p-2 rounded-lg"
+                          style={{
+                            background: expandedSchemaId === schema.id ? 'rgba(0, 169, 157, 0.1)' : 'transparent',
+                            color: '#00A99D',
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          <svg 
+                            className="w-5 h-5 transition-transform duration-300" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                            style={{ transform: expandedSchemaId === schema.id ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        )}
-                      </button>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Accordion Content */}
+                    {expandedSchemaId === schema.id && (
+                      <div 
+                        className="px-4 pb-4 border-t"
+                        style={{ borderColor: 'rgba(0, 0, 0, 0.05)' }}
+                      >
+                        {/* Export Format Selector */}
+                        <div className="pt-4 pb-3">
+                          <label 
+                            className="block text-sm mb-2"
+                            style={{ fontFamily: 'Inter', fontWeight: 600, color: '#4a4642' }}
+                          >
+                            Export Format:
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { key: 'raw', label: '📄 Raw HTML' },
+                              { key: 'json', label: '{ } Raw JSON' },
+                              { key: 'squarespace', label: 'Squarespace' },
+                              { key: 'wordpress', label: 'WordPress' },
+                              { key: 'webflow', label: 'Webflow' },
+                              { key: 'shopify', label: 'Shopify' },
+                              { key: 'wix', label: 'Wix' }
+                            ].map(({ key, label }) => (
+                              <button
+                                key={key}
+                                onClick={() => setExportFormatForSchema(schema.id, key)}
+                                className="px-3 py-1.5 border rounded-lg text-xs font-medium transition-all duration-200"
+                                style={{
+                                  fontFamily: 'Montserrat Alternates',
+                                  background: (selectedExportFormat[schema.id] || 'raw') === key 
+                                    ? 'linear-gradient(135deg, #FAA819, #E99502)' 
+                                    : 'rgba(255, 255, 255, 0.6)',
+                                  color: (selectedExportFormat[schema.id] || 'raw') === key ? 'white' : '#4a4642',
+                                  border: (selectedExportFormat[schema.id] || 'raw') === key 
+                                    ? '1px solid transparent' 
+                                    : '1px solid rgba(0, 0, 0, 0.1)',
+                                }}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Code Display */}
+                        <div className="relative">
+                          <pre 
+                            className="bg-[#1e1e1e] rounded-xl p-4 overflow-x-auto text-xs"
+                            style={{ maxHeight: '300px' }}
+                          >
+                            <code className="text-[#d4d4d4] font-mono leading-relaxed whitespace-pre-wrap">
+                              {formatSchemaForExport(schema.schema_script, selectedExportFormat[schema.id] || 'raw')}
+                            </code>
+                          </pre>
+                        </div>
+
+                        {/* Copy Button */}
+                        <div className="flex items-center justify-between mt-3">
+                          <p className="text-xs" style={{ fontFamily: 'Inter', color: '#6b7280' }}>
+                            Validate: {' '}
+                            <a href="https://validator.schema.org/" target="_blank" rel="noopener noreferrer" className="text-[#00A99D] hover:underline">
+                              Schema.org
+                            </a>
+                            {' '} · {' '}
+                            <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener noreferrer" className="text-[#00A99D] hover:underline">
+                              Google Rich Results
+                            </a>
+                          </p>
+                          <button
+                            onClick={() => copySchemaWithFormat(schema)}
+                            className="py-2 px-5 rounded-lg text-sm flex items-center gap-2"
+                            style={{ 
+                              fontFamily: 'Montserrat Alternates',
+                              fontWeight: 500,
+                              background: copiedSchemaId === schema.id 
+                                ? 'rgba(16, 185, 129, 0.2)' 
+                                : 'linear-gradient(135deg, #00A99D, #0D7871)',
+                              color: copiedSchemaId === schema.id ? '#065f46' : 'white',
+                              transition: 'all 0.3s ease',
+                            }}
+                          >
+                            {copiedSchemaId === schema.id ? '✓ Copied!' : '📋 Copy Code'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -929,146 +1006,6 @@ ${script}`;
           </div>
         </section>
       </main>
-
-      {/* Copy Schema Modal */}
-      {showCopyModal && selectedSchema && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-          onClick={() => setShowCopyModal(false)}
-        >
-          <div 
-            className="relative w-full max-w-lg rounded-2xl p-8"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.8)',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setShowCopyModal(false)}
-              className="absolute top-4 right-4 p-2 rounded-full transition-all hover:bg-black/5"
-              style={{ color: '#9ca3af' }}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* Header */}
-            <div className="mb-6">
-              <h2 
-                className="text-xl mb-2"
-                style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700, color: '#1a1a1a' }}
-              >
-                Copy Schema
-              </h2>
-              <p 
-                className="text-sm"
-                style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
-              >
-                {selectedSchema.page_title || selectedSchema.url}
-              </p>
-            </div>
-
-            {/* Export Format Selection */}
-            <div className="mb-6">
-              <label 
-                className="block text-sm mb-3"
-                style={{ fontFamily: 'Inter', fontWeight: 600, color: '#4a4642' }}
-              >
-                Export Format:
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { key: 'raw', label: '📄 Raw HTML' },
-                  { key: 'json', label: '{ } Raw JSON' },
-                  { key: 'squarespace', label: 'Squarespace' },
-                  { key: 'wordpress', label: 'WordPress' },
-                  { key: 'webflow', label: 'Webflow' },
-                  { key: 'shopify', label: 'Shopify' },
-                  { key: 'wix', label: 'Wix' }
-                ].map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedExportFormat(key)}
-                    className="px-3 py-2 border rounded-lg text-xs font-medium transition-all duration-200"
-                    style={{
-                      fontFamily: 'Montserrat Alternates',
-                      background: selectedExportFormat === key 
-                        ? 'linear-gradient(135deg, #FAA819, #E99502)' 
-                        : 'rgba(255, 255, 255, 0.6)',
-                      color: selectedExportFormat === key ? 'white' : '#4a4642',
-                      border: selectedExportFormat === key 
-                        ? '1px solid transparent' 
-                        : '1px solid rgba(0, 0, 0, 0.1)',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Format-specific instructions */}
-            {selectedExportFormat === 'json' && (
-              <div 
-                className="mb-6 p-4 rounded-xl"
-                style={{ background: 'rgba(0, 169, 157, 0.1)', border: '1px solid rgba(0, 169, 157, 0.3)' }}
-              >
-                <p className="text-sm" style={{ fontFamily: 'Inter', fontWeight: 500, color: '#005a54' }}>
-                  <strong>For Next.js / React:</strong> Paste this JSON into a <code className="bg-white/50 px-1 rounded">const schemaMarkup = &#123;...&#125;</code> variable and use with the Script component.
-                </p>
-              </div>
-            )}
-
-            {selectedExportFormat !== 'raw' && selectedExportFormat !== 'json' && (
-              <div 
-                className="mb-6 p-4 rounded-xl"
-                style={{ background: 'rgba(250, 168, 25, 0.1)', border: '1px solid rgba(250, 168, 25, 0.3)' }}
-              >
-                <p className="text-sm" style={{ fontFamily: 'Inter', fontWeight: 500, color: '#92400e' }}>
-                  {selectedExportFormat === 'squarespace' && 'Go to Settings → Advanced → Code Injection → Header'}
-                  {selectedExportFormat === 'wordpress' && 'Add to header.php before </head> or use a plugin like "Insert Headers and Footers"'}
-                  {selectedExportFormat === 'webflow' && 'Go to Page Settings → Custom Code → Head Code'}
-                  {selectedExportFormat === 'shopify' && 'Go to Online Store → Themes → Edit Code → theme.liquid, paste before </head>'}
-                  {selectedExportFormat === 'wix' && 'Go to Settings → Custom Code → Head section'}
-                </p>
-              </div>
-            )}
-
-            {/* Copy Button */}
-            <button
-              onClick={copySchemaWithFormat}
-              className="w-full py-3 px-6 rounded-xl text-white font-semibold transition-all hover:shadow-lg flex items-center justify-center gap-2"
-              style={{
-                fontFamily: 'Montserrat Alternates',
-                background: 'linear-gradient(135deg, #00A99D 0%, #0D7871 100%)',
-              }}
-            >
-              📋 Copy to Clipboard
-            </button>
-
-            {/* Validation Links */}
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-xs text-center" style={{ fontFamily: 'Inter', color: '#6b7280' }}>
-                Validate your schema: {' '}
-                <a href="https://validator.schema.org/" target="_blank" rel="noopener noreferrer" className="text-[#00A99D] hover:underline">
-                  Schema.org Validator
-                </a>
-                {' '} or {' '}
-                <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener noreferrer" className="text-[#00A99D] hover:underline">
-                  Google Rich Results Test
-                </a>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }

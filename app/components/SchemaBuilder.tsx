@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import SchemaRunLimitModal from './SchemaRunLimitModal';
 
@@ -245,12 +244,6 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
   const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Edit mode state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isLoadingEdit, setIsLoadingEdit] = useState<boolean>(false);
-  const [editableSchemaText, setEditableSchemaText] = useState<string>('');
-  const searchParams = useSearchParams();
-
   const API_URL = process.env.NEXT_PUBLIC_SCHEMA_API_URL || '';
 
   // Fetch current user on mount for usage tracking
@@ -263,107 +256,6 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
     };
     fetchUser();
   }, []);
-
-  // Load schema for editing if edit param is present
-  useEffect(() => {
-    const editId = searchParams.get('edit');
-    if (editId && editId !== editingId) {
-      loadSchemaForEditing(editId);
-    }
-  }, [searchParams]);
-
-  const loadSchemaForEditing = async (schemaId: string) => {
-    setIsLoadingEdit(true);
-    console.log('Loading schema for editing:', schemaId);
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error('User not logged in');
-        setIsLoadingEdit(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('schema_projects')
-        .select('*')
-        .eq('id', schemaId)
-        .eq('user_id', user.id)
-        .single();
-
-      console.log('Loaded schema data:', data);
-      console.log('Load error:', error);
-
-      if (error) {
-        console.error('Error loading schema:', error);
-        setIsLoadingEdit(false);
-        return;
-      }
-
-      if (data) {
-        setEditingId(schemaId);
-        
-        // Set the URL input
-        if (data.url) {
-          setUrlInput(data.url);
-        }
-
-        // Set the schema type for reference
-        if (data.schema_type) {
-          const firstType = data.schema_type.split(',')[0].trim().toLowerCase();
-          setSelectedType(firstType);
-        }
-
-        // Parse and set the schema data
-        let schemaData = null;
-        if (data.schema_data) {
-          schemaData = typeof data.schema_data === 'string' 
-            ? JSON.parse(data.schema_data) 
-            : data.schema_data;
-          console.log('Parsed schema_data:', schemaData);
-          setGeneratedSchema(schemaData);
-        } else if (data.schema_script) {
-          // Try to extract JSON from schema_script if schema_data is missing
-          const jsonMatch = data.schema_script.match(/<script[^>]*>([\s\S]*?)<\/script>/);
-          if (jsonMatch) {
-            try {
-              schemaData = JSON.parse(jsonMatch[1].trim());
-              console.log('Extracted schema from script:', schemaData);
-              setGeneratedSchema(schemaData);
-            } catch (parseErr) {
-              console.error('Failed to parse schema from script:', parseErr);
-              setGeneratedSchema({ '@context': 'https://schema.org', '@type': data.schema_type });
-            }
-          }
-        }
-
-        // Set the schema script for display and enable editing
-        if (data.schema_script) {
-          setAnalysisResult({
-            primaryType: data.schema_type,
-            confidence: data.confidence || 'High',
-            schemaScript: data.schema_script,
-            extractedSchemaTypes: [data.schema_type],
-          });
-          
-          // Set the editable schema text
-          const jsonMatch = data.schema_script.match(/<script[^>]*>([\s\S]*?)<\/script>/);
-          if (jsonMatch) {
-            setEditableSchemaText(jsonMatch[1].trim());
-          }
-        }
-
-        // Stay on URL tab - the schema will display below
-        setActiveTab('url');
-        
-        console.log('Edit mode setup complete');
-      }
-    } catch (err) {
-      console.error('Error loading schema for editing:', err);
-    } finally {
-      setIsLoadingEdit(false);
-    }
-  };
 
   // Sync with external tab control (for tour)
   useEffect(() => {
@@ -401,46 +293,22 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
         return false;
       }
 
-      // If editing, update the existing record
-      if (editingId) {
-        const { error } = await supabase
-          .from('schema_projects')
-          .update({
-            url,
-            page_title: pageTitle,
-            schema_type: schemaType,
-            confidence,
-            schema_data: schemaData,
-            schema_script: schemaScript,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingId)
-          .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('schema_projects')
+        .insert({
+          user_id: user.id,
+          url,
+          page_title: pageTitle,
+          schema_type: schemaType,
+          confidence,
+          schema_data: schemaData,
+          schema_script: schemaScript,
+        });
 
-        if (error) {
-          console.error('Error updating schema:', error);
-          setSaveStatus('error');
-          return false;
-        }
-      } else {
-        // Insert new record
-        const { error } = await supabase
-          .from('schema_projects')
-          .insert({
-            user_id: user.id,
-            url,
-            page_title: pageTitle,
-            schema_type: schemaType,
-            confidence,
-            schema_data: schemaData,
-            schema_script: schemaScript,
-          });
-
-        if (error) {
-          console.error('Error saving schema:', error);
-          setSaveStatus('error');
-          return false;
-        }
+      if (error) {
+        console.error('Error saving schema:', error);
+        setSaveStatus('error');
+        return false;
       }
 
       setSaveStatus('saved');
@@ -456,62 +324,6 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
   // ============================================
   // HANDLERS
   // ============================================
-
-  // Handle manual update when editing
-  const handleUpdateSchema = async (): Promise<void> => {
-    if (!editingId) return;
-
-    // Parse the edited JSON
-    let schemaData = generatedSchema;
-    let schemaScript = analysisResult?.schemaScript || '';
-    
-    if (editableSchemaText) {
-      try {
-        schemaData = JSON.parse(editableSchemaText);
-        schemaScript = `<script type="application/ld+json">\n${editableSchemaText}\n</script>`;
-      } catch (e) {
-        setError('Invalid JSON. Please check your schema syntax.');
-        return;
-      }
-    }
-
-    if (!schemaData) {
-      setError('No schema data to save.');
-      return;
-    }
-
-    // Extract page title from schema if available
-    let pageTitle = null;
-    if (schemaData) {
-      const data = schemaData as Record<string, unknown>;
-      pageTitle = (data.headline as string) || 
-                  (data.name as string) || 
-                  (data.title as string) || 
-                  null;
-      
-      // Check @graph if present
-      if (!pageTitle && data['@graph'] && Array.isArray(data['@graph'])) {
-        const mainSchema = data['@graph'].find((s: Record<string, unknown>) => 
-          s.headline || s.name || s.title
-        );
-        if (mainSchema) {
-          pageTitle = (mainSchema as Record<string, unknown>).headline as string || 
-                      (mainSchema as Record<string, unknown>).name as string || 
-                      (mainSchema as Record<string, unknown>).title as string || 
-                      null;
-        }
-      }
-    }
-
-    await saveSchemaToDatabase(
-      urlInput || '',
-      pageTitle,
-      selectedType || analysisResult?.primaryType || 'Unknown',
-      analysisResult?.confidence || 'High',
-      schemaData,
-      schemaScript
-    );
-  };
 
   const handleFetchUrl = async (): Promise<void> => {
     if (!urlInput.trim()) {
@@ -1128,79 +940,30 @@ ${script}`;
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-bold text-emerald-800">✅ Generated Schema</h3>
             {saveStatus === 'saving' && (
-              <span className="text-xs text-gray-500 animate-pulse">💾 {editingId ? 'Updating...' : 'Saving...'}</span>
+              <span className="text-xs text-gray-500 animate-pulse">💾 Saving...</span>
             )}
             {saveStatus === 'saved' && (
-              <span className="text-xs text-emerald-600">✓ {editingId ? 'Updated' : 'Saved to My Projects'}</span>
+              <span className="text-xs text-emerald-600">✓ Saved to My Projects</span>
             )}
             {saveStatus === 'error' && (
               <span className="text-xs text-amber-600">⚠️ Not saved (login required)</span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            {editingId && (
-              <button 
-                onClick={handleUpdateSchema}
-                disabled={saveStatus === 'saving'}
-                className="px-4 py-2.5 bg-linear-to-r from-[#FAA819] to-[#E99502] text-white rounded-xl 
-                           font-semibold cursor-pointer transition-all duration-200
-                           hover:-translate-y-px hover:shadow-lg hover:shadow-[#FAA819]/30
-                           disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {saveStatus === 'saving' ? '💾 Saving...' : '💾 Update Schema'}
-              </button>
-            )}
-            <button 
-              onClick={copyToClipboard} 
-              className="px-4 py-2.5 bg-linear-to-r from-[#00A99D] to-[#008F85] text-white rounded-xl 
-                         font-semibold cursor-pointer transition-all duration-200
-                         hover:-translate-y-px hover:shadow-lg hover:shadow-[#00A99D]/30"
-            >
-              {copied ? '✓ Copied!' : '📋 Copy'}
-            </button>
-          </div>
+          <button 
+            onClick={copyToClipboard} 
+            className="px-4 py-2.5 bg-linear-to-r from-[#00A99D] to-[#008F85] text-white rounded-xl 
+                       font-semibold cursor-pointer transition-all duration-200
+                       hover:-translate-y-px hover:shadow-lg hover:shadow-[#00A99D]/30"
+          >
+            {copied ? '✓ Copied!' : '📋 Copy'}
+          </button>
         </div>
 
-        {/* Schema Code Display - Editable in edit mode */}
-        {editingId ? (
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <label className="font-medium text-sm text-[#4a4642]">
-                ✏️ Edit your schema JSON directly:
-              </label>
-              <span className="text-xs text-gray-500">Changes will be saved when you click "Update Schema"</span>
-            </div>
-            <textarea
-              value={editableSchemaText}
-              onChange={(e) => {
-                setEditableSchemaText(e.target.value);
-                // Try to parse and update generatedSchema
-                try {
-                  const parsed = JSON.parse(e.target.value);
-                  setGeneratedSchema(parsed);
-                  // Update the schemaScript in analysisResult
-                  setAnalysisResult(prev => prev ? {
-                    ...prev,
-                    schemaScript: `<script type="application/ld+json">\n${e.target.value}\n</script>`
-                  } : null);
-                } catch {
-                  // Invalid JSON, don't update
-                }
-              }}
-              className="w-full bg-[#1e1e1e] text-[#d4d4d4] font-mono text-xs leading-relaxed rounded-xl p-5 
-                         border-2 border-transparent focus:border-[#FAA819] focus:outline-none
-                         resize-y min-h-[300px]"
-              style={{ fontFamily: 'Monaco, Consolas, monospace' }}
-              spellCheck={false}
-            />
-          </div>
-        ) : (
-          <pre className="bg-[#1e1e1e] rounded-xl p-5 overflow-x-auto mb-5">
-            <code className="text-[#d4d4d4] font-mono text-xs leading-relaxed whitespace-pre-wrap wrap-break-word">
-              {script}
-            </code>
-          </pre>
-        )}
+        <pre className="bg-[#1e1e1e] rounded-xl p-5 overflow-x-auto mb-5">
+          <code className="text-[#d4d4d4] font-mono text-xs leading-relaxed whitespace-pre-wrap wrap-break-word">
+            {script}
+          </code>
+        </pre>
 
         {/* Export Formats */}
         <div className="mb-5">
@@ -1322,52 +1085,8 @@ ${script}`;
 
   return (
     <div className="font-sans">
-      {/* Loading overlay for edit mode */}
-      {isLoadingEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-2xl p-8 shadow-xl flex flex-col items-center gap-4">
-            <svg className="w-10 h-10 animate-spin text-[#00A99D]" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p className="font-medium text-[#4a4642]">Loading schema...</p>
-          </div>
-        </div>
-      )}
-
       <div className="bg-white/85 backdrop-blur-xl rounded-3xl p-8 shadow-lg border border-white/60">
         
-        {/* Edit Mode Banner */}
-        {editingId && (
-          <div className="mb-6 p-4 rounded-xl flex items-center justify-between"
-            style={{ 
-              background: 'linear-gradient(135deg, rgba(0, 169, 157, 0.1), rgba(0, 169, 157, 0.05))',
-              border: '1px solid rgba(0, 169, 157, 0.3)'
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-xl">✏️</span>
-              <div>
-                <p className="font-semibold text-[#005a54]" style={{ fontFamily: 'Montserrat Alternates' }}>
-                  Editing Saved Schema
-                </p>
-                <p className="text-sm text-[#4a4642]">{urlInput || 'Untitled'}</p>
-              </div>
-            </div>
-            <a
-              href="/tools/schema-studio"
-              className="px-4 py-2 rounded-lg text-sm font-medium"
-              style={{ 
-                background: 'rgba(255, 255, 255, 0.8)',
-                border: '1px solid rgba(0, 169, 157, 0.3)',
-                color: '#005a54',
-              }}
-            >
-              + New Schema
-            </a>
-          </div>
-        )}
-
         {/* Input Tabs */}
         <div data-tour="schema-tabs" className="flex gap-2 mb-6 flex-wrap">
           {[
