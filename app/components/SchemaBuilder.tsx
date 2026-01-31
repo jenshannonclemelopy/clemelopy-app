@@ -307,10 +307,42 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
           setUrlInput(data.url);
         }
 
-        // Set the schema type
+        // Set the schema type - handle various formats
         if (data.schema_type) {
-          const typeKey = data.schema_type.toLowerCase();
-          setSelectedType(typeKey);
+          // Get first type if multiple (e.g., "SoftwareApplication, Organization" -> "softwareapplication")
+          const firstType = data.schema_type.split(',')[0].trim().toLowerCase();
+          
+          // Map common schema types to our keys
+          const typeMapping: Record<string, string> = {
+            'softwareapplication': 'product',
+            'webpage': 'article',
+            'newsarticle': 'article',
+            'blogposting': 'article',
+            'faqpage': 'faq',
+            'localbusiness': 'localbusiness',
+            'person': 'person',
+            'organization': 'organization',
+            'article': 'article',
+            'service': 'service',
+            'product': 'product',
+            'event': 'event',
+            'howto': 'howto',
+            'creativework': 'creativework',
+            'review': 'creativework',
+            'course': 'event',
+          };
+          
+          const mappedType = typeMapping[firstType] || firstType;
+          console.log('Schema type mapping:', data.schema_type, '->', firstType, '->', mappedType);
+          
+          // Only set if it exists in SCHEMA_TYPES
+          if (SCHEMA_TYPES[mappedType]) {
+            setSelectedType(mappedType);
+          } else {
+            console.log('No matching schema type found for:', mappedType);
+            // Default to article if no match
+            setSelectedType('article');
+          }
         }
 
         // Parse and set the schema data
@@ -321,6 +353,44 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
             : data.schema_data;
           console.log('Parsed schema_data:', schemaData);
           setGeneratedSchema(schemaData);
+          
+          // Extract form data from schema
+          // Handle both single schema and @graph array
+          let formDataSource = schemaData;
+          if (schemaData['@graph'] && Array.isArray(schemaData['@graph'])) {
+            // Find the main schema (first non-Organization or the first one)
+            formDataSource = schemaData['@graph'].find((s: Record<string, unknown>) => 
+              s['@type'] !== 'Organization'
+            ) || schemaData['@graph'][0];
+          }
+          
+          // Convert schema fields to form data
+          const extractedFormData: FormDataType = {};
+          Object.keys(formDataSource).forEach(key => {
+            if (!key.startsWith('@')) {
+              const value = formDataSource[key];
+              // Handle nested objects (like author)
+              if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                if ((value as Record<string, unknown>).name) {
+                  extractedFormData[key] = (value as Record<string, unknown>).name as string;
+                }
+              } else if (Array.isArray(value)) {
+                // Handle arrays (like sameAs)
+                extractedFormData[key] = value.join('\n');
+              } else {
+                extractedFormData[key] = value as string;
+              }
+            }
+          });
+          
+          // Also set the URL in form data
+          if (data.url) {
+            extractedFormData.url = data.url;
+          }
+          
+          console.log('Extracted form data:', extractedFormData);
+          setFormData(extractedFormData);
+          
         } else if (data.schema_script) {
           // Try to extract JSON from schema_script if schema_data is missing
           const jsonMatch = data.schema_script.match(/<script[^>]*>([\s\S]*?)<\/script>/);
@@ -329,9 +399,39 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
               schemaData = JSON.parse(jsonMatch[1].trim());
               console.log('Extracted schema from script:', schemaData);
               setGeneratedSchema(schemaData);
+              
+              // Same extraction logic for form data
+              let formDataSource = schemaData;
+              if (schemaData['@graph'] && Array.isArray(schemaData['@graph'])) {
+                formDataSource = schemaData['@graph'].find((s: Record<string, unknown>) => 
+                  s['@type'] !== 'Organization'
+                ) || schemaData['@graph'][0];
+              }
+              
+              const extractedFormData: FormDataType = {};
+              Object.keys(formDataSource).forEach(key => {
+                if (!key.startsWith('@')) {
+                  const value = formDataSource[key];
+                  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    if ((value as Record<string, unknown>).name) {
+                      extractedFormData[key] = (value as Record<string, unknown>).name as string;
+                    }
+                  } else if (Array.isArray(value)) {
+                    extractedFormData[key] = value.join('\n');
+                  } else {
+                    extractedFormData[key] = value as string;
+                  }
+                }
+              });
+              
+              if (data.url) {
+                extractedFormData.url = data.url;
+              }
+              
+              setFormData(extractedFormData);
+              
             } catch (parseErr) {
               console.error('Failed to parse schema from script:', parseErr);
-              // Set a placeholder so the UI shows
               setGeneratedSchema({ '@context': 'https://schema.org', '@type': data.schema_type });
             }
           }
@@ -347,8 +447,8 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
           });
         }
 
-        // Switch to URL tab
-        setActiveTab('url');
+        // Switch to manual tab so they can see and edit the form fields
+        setActiveTab('manual');
         
         console.log('Edit mode setup complete');
       }
