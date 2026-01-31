@@ -248,6 +248,7 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
   // Edit mode state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isLoadingEdit, setIsLoadingEdit] = useState<boolean>(false);
+  const [editableSchemaText, setEditableSchemaText] = useState<string>('');
   const searchParams = useSearchParams();
 
   const API_URL = process.env.NEXT_PUBLIC_SCHEMA_API_URL || '';
@@ -307,42 +308,10 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
           setUrlInput(data.url);
         }
 
-        // Set the schema type - handle various formats
+        // Set the schema type for reference
         if (data.schema_type) {
-          // Get first type if multiple (e.g., "SoftwareApplication, Organization" -> "softwareapplication")
           const firstType = data.schema_type.split(',')[0].trim().toLowerCase();
-          
-          // Map common schema types to our keys
-          const typeMapping: Record<string, string> = {
-            'softwareapplication': 'product',
-            'webpage': 'article',
-            'newsarticle': 'article',
-            'blogposting': 'article',
-            'faqpage': 'faq',
-            'localbusiness': 'localbusiness',
-            'person': 'person',
-            'organization': 'organization',
-            'article': 'article',
-            'service': 'service',
-            'product': 'product',
-            'event': 'event',
-            'howto': 'howto',
-            'creativework': 'creativework',
-            'review': 'creativework',
-            'course': 'event',
-          };
-          
-          const mappedType = typeMapping[firstType] || firstType;
-          console.log('Schema type mapping:', data.schema_type, '->', firstType, '->', mappedType);
-          
-          // Only set if it exists in SCHEMA_TYPES
-          if (SCHEMA_TYPES[mappedType]) {
-            setSelectedType(mappedType);
-          } else {
-            console.log('No matching schema type found for:', mappedType);
-            // Default to article if no match
-            setSelectedType('article');
-          }
+          setSelectedType(firstType);
         }
 
         // Parse and set the schema data
@@ -353,44 +322,6 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
             : data.schema_data;
           console.log('Parsed schema_data:', schemaData);
           setGeneratedSchema(schemaData);
-          
-          // Extract form data from schema
-          // Handle both single schema and @graph array
-          let formDataSource = schemaData;
-          if (schemaData['@graph'] && Array.isArray(schemaData['@graph'])) {
-            // Find the main schema (first non-Organization or the first one)
-            formDataSource = schemaData['@graph'].find((s: Record<string, unknown>) => 
-              s['@type'] !== 'Organization'
-            ) || schemaData['@graph'][0];
-          }
-          
-          // Convert schema fields to form data
-          const extractedFormData: FormDataType = {};
-          Object.keys(formDataSource).forEach(key => {
-            if (!key.startsWith('@')) {
-              const value = formDataSource[key];
-              // Handle nested objects (like author)
-              if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                if ((value as Record<string, unknown>).name) {
-                  extractedFormData[key] = (value as Record<string, unknown>).name as string;
-                }
-              } else if (Array.isArray(value)) {
-                // Handle arrays (like sameAs)
-                extractedFormData[key] = value.join('\n');
-              } else {
-                extractedFormData[key] = value as string;
-              }
-            }
-          });
-          
-          // Also set the URL in form data
-          if (data.url) {
-            extractedFormData.url = data.url;
-          }
-          
-          console.log('Extracted form data:', extractedFormData);
-          setFormData(extractedFormData);
-          
         } else if (data.schema_script) {
           // Try to extract JSON from schema_script if schema_data is missing
           const jsonMatch = data.schema_script.match(/<script[^>]*>([\s\S]*?)<\/script>/);
@@ -399,37 +330,6 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
               schemaData = JSON.parse(jsonMatch[1].trim());
               console.log('Extracted schema from script:', schemaData);
               setGeneratedSchema(schemaData);
-              
-              // Same extraction logic for form data
-              let formDataSource = schemaData;
-              if (schemaData['@graph'] && Array.isArray(schemaData['@graph'])) {
-                formDataSource = schemaData['@graph'].find((s: Record<string, unknown>) => 
-                  s['@type'] !== 'Organization'
-                ) || schemaData['@graph'][0];
-              }
-              
-              const extractedFormData: FormDataType = {};
-              Object.keys(formDataSource).forEach(key => {
-                if (!key.startsWith('@')) {
-                  const value = formDataSource[key];
-                  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                    if ((value as Record<string, unknown>).name) {
-                      extractedFormData[key] = (value as Record<string, unknown>).name as string;
-                    }
-                  } else if (Array.isArray(value)) {
-                    extractedFormData[key] = value.join('\n');
-                  } else {
-                    extractedFormData[key] = value as string;
-                  }
-                }
-              });
-              
-              if (data.url) {
-                extractedFormData.url = data.url;
-              }
-              
-              setFormData(extractedFormData);
-              
             } catch (parseErr) {
               console.error('Failed to parse schema from script:', parseErr);
               setGeneratedSchema({ '@context': 'https://schema.org', '@type': data.schema_type });
@@ -437,7 +337,7 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
           }
         }
 
-        // Set the schema script for display
+        // Set the schema script for display and enable editing
         if (data.schema_script) {
           setAnalysisResult({
             primaryType: data.schema_type,
@@ -445,10 +345,16 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
             schemaScript: data.schema_script,
             extractedSchemaTypes: [data.schema_type],
           });
+          
+          // Set the editable schema text
+          const jsonMatch = data.schema_script.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+          if (jsonMatch) {
+            setEditableSchemaText(jsonMatch[1].trim());
+          }
         }
 
-        // Switch to manual tab so they can see and edit the form fields
-        setActiveTab('manual');
+        // Stay on URL tab - the schema will display below
+        setActiveTab('url');
         
         console.log('Edit mode setup complete');
       }
@@ -553,20 +459,57 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
 
   // Handle manual update when editing
   const handleUpdateSchema = async (): Promise<void> => {
-    if (!editingId || !generatedSchema) return;
+    if (!editingId) return;
 
-    const script = analysisResult?.schemaScript || 
-      `<script type="application/ld+json">\n${JSON.stringify(generatedSchema, null, 2)}\n</script>`;
+    // Parse the edited JSON
+    let schemaData = generatedSchema;
+    let schemaScript = analysisResult?.schemaScript || '';
+    
+    if (editableSchemaText) {
+      try {
+        schemaData = JSON.parse(editableSchemaText);
+        schemaScript = `<script type="application/ld+json">\n${editableSchemaText}\n</script>`;
+      } catch (e) {
+        setError('Invalid JSON. Please check your schema syntax.');
+        return;
+      }
+    }
+
+    if (!schemaData) {
+      setError('No schema data to save.');
+      return;
+    }
+
+    // Extract page title from schema if available
+    let pageTitle = null;
+    if (schemaData) {
+      const data = schemaData as Record<string, unknown>;
+      pageTitle = (data.headline as string) || 
+                  (data.name as string) || 
+                  (data.title as string) || 
+                  null;
+      
+      // Check @graph if present
+      if (!pageTitle && data['@graph'] && Array.isArray(data['@graph'])) {
+        const mainSchema = data['@graph'].find((s: Record<string, unknown>) => 
+          s.headline || s.name || s.title
+        );
+        if (mainSchema) {
+          pageTitle = (mainSchema as Record<string, unknown>).headline as string || 
+                      (mainSchema as Record<string, unknown>).name as string || 
+                      (mainSchema as Record<string, unknown>).title as string || 
+                      null;
+        }
+      }
+    }
 
     await saveSchemaToDatabase(
       urlInput || '',
-      analysisResult?.extractedData?.headline as string || 
-        analysisResult?.extractedData?.name as string || 
-        null,
+      pageTitle,
       selectedType || analysisResult?.primaryType || 'Unknown',
       analysisResult?.confidence || 'High',
-      generatedSchema,
-      script
+      schemaData,
+      schemaScript
     );
   };
 
@@ -1218,11 +1161,46 @@ ${script}`;
           </div>
         </div>
 
-        <pre className="bg-[#1e1e1e] rounded-xl p-5 overflow-x-auto mb-5">
-          <code className="text-[#d4d4d4] font-mono text-xs leading-relaxed whitespace-pre-wrap wrap-break-word">
-            {script}
-          </code>
-        </pre>
+        {/* Schema Code Display - Editable in edit mode */}
+        {editingId ? (
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-medium text-sm text-[#4a4642]">
+                ✏️ Edit your schema JSON directly:
+              </label>
+              <span className="text-xs text-gray-500">Changes will be saved when you click "Update Schema"</span>
+            </div>
+            <textarea
+              value={editableSchemaText}
+              onChange={(e) => {
+                setEditableSchemaText(e.target.value);
+                // Try to parse and update generatedSchema
+                try {
+                  const parsed = JSON.parse(e.target.value);
+                  setGeneratedSchema(parsed);
+                  // Update the schemaScript in analysisResult
+                  setAnalysisResult(prev => prev ? {
+                    ...prev,
+                    schemaScript: `<script type="application/ld+json">\n${e.target.value}\n</script>`
+                  } : null);
+                } catch {
+                  // Invalid JSON, don't update
+                }
+              }}
+              className="w-full bg-[#1e1e1e] text-[#d4d4d4] font-mono text-xs leading-relaxed rounded-xl p-5 
+                         border-2 border-transparent focus:border-[#FAA819] focus:outline-none
+                         resize-y min-h-[300px]"
+              style={{ fontFamily: 'Monaco, Consolas, monospace' }}
+              spellCheck={false}
+            />
+          </div>
+        ) : (
+          <pre className="bg-[#1e1e1e] rounded-xl p-5 overflow-x-auto mb-5">
+            <code className="text-[#d4d4d4] font-mono text-xs leading-relaxed whitespace-pre-wrap wrap-break-word">
+              {script}
+            </code>
+          </pre>
+        )}
 
         {/* Export Formats */}
         <div className="mb-5">
