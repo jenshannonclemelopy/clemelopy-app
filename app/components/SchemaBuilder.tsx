@@ -451,6 +451,25 @@ export default function SchemaBuilder({ externalActiveTab, onTabChange }: Schema
   // HANDLERS
   // ============================================
 
+  // Handle manual update when editing
+  const handleUpdateSchema = async (): Promise<void> => {
+    if (!editingId || !generatedSchema) return;
+
+    const script = analysisResult?.schemaScript || 
+      `<script type="application/ld+json">\n${JSON.stringify(generatedSchema, null, 2)}\n</script>`;
+
+    await saveSchemaToDatabase(
+      urlInput || '',
+      analysisResult?.extractedData?.headline as string || 
+        analysisResult?.extractedData?.name as string || 
+        null,
+      selectedType || analysisResult?.primaryType || 'Unknown',
+      analysisResult?.confidence || 'High',
+      generatedSchema,
+      script
+    );
+  };
+
   const handleFetchUrl = async (): Promise<void> => {
     if (!urlInput.trim()) {
       setError('Please enter a URL');
@@ -1075,14 +1094,28 @@ ${script}`;
               <span className="text-xs text-amber-600">⚠️ Not saved (login required)</span>
             )}
           </div>
-          <button 
-            onClick={copyToClipboard} 
-            className="px-4 py-2.5 bg-linear-to-r from-[#00A99D] to-[#008F85] text-white rounded-xl 
-                       font-semibold cursor-pointer transition-all duration-200
-                       hover:-translate-y-px hover:shadow-lg hover:shadow-[#00A99D]/30"
-          >
-            {copied ? '✓ Copied!' : '📋 Copy'}
-          </button>
+          <div className="flex items-center gap-2">
+            {editingId && (
+              <button 
+                onClick={handleUpdateSchema}
+                disabled={saveStatus === 'saving'}
+                className="px-4 py-2.5 bg-linear-to-r from-[#FAA819] to-[#E99502] text-white rounded-xl 
+                           font-semibold cursor-pointer transition-all duration-200
+                           hover:-translate-y-px hover:shadow-lg hover:shadow-[#FAA819]/30
+                           disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {saveStatus === 'saving' ? '💾 Saving...' : '💾 Update Schema'}
+              </button>
+            )}
+            <button 
+              onClick={copyToClipboard} 
+              className="px-4 py-2.5 bg-linear-to-r from-[#00A99D] to-[#008F85] text-white rounded-xl 
+                         font-semibold cursor-pointer transition-all duration-200
+                         hover:-translate-y-px hover:shadow-lg hover:shadow-[#00A99D]/30"
+            >
+              {copied ? '✓ Copied!' : '📋 Copy'}
+            </button>
+          </div>
         </div>
 
         <pre className="bg-[#1e1e1e] rounded-xl p-5 overflow-x-auto mb-5">
