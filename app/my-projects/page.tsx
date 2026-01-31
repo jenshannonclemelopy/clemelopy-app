@@ -43,6 +43,11 @@ export default function MyProjects() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedSchemaId, setCopiedSchemaId] = useState<string | null>(null);
   const [deletingSchemaId, setDeletingSchemaId] = useState<string | null>(null);
+  
+  // Copy modal state
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [selectedSchema, setSelectedSchema] = useState<SchemaProject | null>(null);
+  const [selectedExportFormat, setSelectedExportFormat] = useState('raw');
 
   // Fetch projects from the worker
   useEffect(() => {
@@ -161,6 +166,80 @@ export default function MyProjects() {
   };
 
   // Schema actions
+  const openCopyModal = (schema: SchemaProject) => {
+    setSelectedSchema(schema);
+    setSelectedExportFormat('raw');
+    setShowCopyModal(true);
+  };
+
+  const formatSchemaForExport = (script: string, format: string): string => {
+    // For Raw JSON, extract just the JSON object without script tags
+    if (format === 'json') {
+      const jsonMatch = script.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+      if (jsonMatch) {
+        return jsonMatch[1].trim();
+      }
+      return script;
+    }
+
+    switch (format) {
+      case 'squarespace':
+        return `<!-- =============================================
+    SQUARESPACE INSTRUCTIONS
+    Go to: Settings > Advanced > Code Injection > Header
+    Paste this entire code block there
+============================================= -->
+
+${script}`;
+      case 'wordpress':
+        return `<!-- =============================================
+    WORDPRESS INSTRUCTIONS
+    Option 1: Add to theme's header.php before </head>
+    Option 2: Use plugin "Insert Headers and Footers"
+    Option 3: Use theme customizer > Additional CSS/Scripts
+============================================= -->
+
+${script}`;
+      case 'webflow':
+        return `<!-- =============================================
+    WEBFLOW INSTRUCTIONS
+    Go to: Page Settings > Custom Code > Head Code
+    Paste this entire code block there
+============================================= -->
+
+${script}`;
+      case 'shopify':
+        return `<!-- =============================================
+    SHOPIFY INSTRUCTIONS
+    Go to: Online Store > Themes > Edit Code
+    Find theme.liquid and paste before </head>
+============================================= -->
+
+${script}`;
+      case 'wix':
+        return `<!-- =============================================
+    WIX INSTRUCTIONS
+    Go to: Settings > Custom Code > Head
+    Or: Site Settings > Tracking & Analytics > Custom
+    Paste this entire code block there
+============================================= -->
+
+${script}`;
+      default:
+        return script;
+    }
+  };
+
+  const copySchemaWithFormat = async () => {
+    if (!selectedSchema) return;
+    
+    const formattedScript = formatSchemaForExport(selectedSchema.schema_script, selectedExportFormat);
+    await navigator.clipboard.writeText(formattedScript);
+    setCopiedSchemaId(selectedSchema.id);
+    setShowCopyModal(false);
+    setTimeout(() => setCopiedSchemaId(null), 2000);
+  };
+
   const copySchema = async (id: string, script: string) => {
     await navigator.clipboard.writeText(script);
     setCopiedSchemaId(id);
@@ -740,7 +819,7 @@ export default function MyProjects() {
                     {/* Actions */}
                     <div className="flex items-center gap-2 shrink-0">
                       <button
-                        onClick={() => copySchema(schema.id, schema.schema_script)}
+                        onClick={() => openCopyModal(schema)}
                         className="py-2 px-4 rounded-lg text-sm flex items-center gap-1.5"
                         style={{ 
                           fontFamily: 'Montserrat Alternates',
@@ -754,6 +833,20 @@ export default function MyProjects() {
                       >
                         {copiedSchemaId === schema.id ? '✓ Copied!' : '📋 Copy'}
                       </button>
+                      <a
+                        href={`/tools/schema-studio?edit=${schema.id}`}
+                        className="py-2 px-4 rounded-lg text-sm flex items-center gap-1.5"
+                        style={{ 
+                          fontFamily: 'Montserrat Alternates',
+                          fontWeight: 500,
+                          background: 'rgba(255, 255, 255, 0.6)',
+                          border: '1px solid rgba(0, 169, 157, 0.3)',
+                          color: '#005a54',
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        ✏️ Edit
+                      </a>
                       <button
                         onClick={() => deleteSchema(schema.id)}
                         disabled={deletingSchemaId === schema.id}
@@ -836,6 +929,146 @@ export default function MyProjects() {
           </div>
         </section>
       </main>
+
+      {/* Copy Schema Modal */}
+      {showCopyModal && selectedSchema && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          onClick={() => setShowCopyModal(false)}
+        >
+          <div 
+            className="relative w-full max-w-lg rounded-2xl p-8"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowCopyModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full transition-all hover:bg-black/5"
+              style={{ color: '#9ca3af' }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="mb-6">
+              <h2 
+                className="text-xl mb-2"
+                style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700, color: '#1a1a1a' }}
+              >
+                Copy Schema
+              </h2>
+              <p 
+                className="text-sm"
+                style={{ fontFamily: 'Inter', fontWeight: 500, color: '#4a4642' }}
+              >
+                {selectedSchema.page_title || selectedSchema.url}
+              </p>
+            </div>
+
+            {/* Export Format Selection */}
+            <div className="mb-6">
+              <label 
+                className="block text-sm mb-3"
+                style={{ fontFamily: 'Inter', fontWeight: 600, color: '#4a4642' }}
+              >
+                Export Format:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: 'raw', label: '📄 Raw HTML' },
+                  { key: 'json', label: '{ } Raw JSON' },
+                  { key: 'squarespace', label: 'Squarespace' },
+                  { key: 'wordpress', label: 'WordPress' },
+                  { key: 'webflow', label: 'Webflow' },
+                  { key: 'shopify', label: 'Shopify' },
+                  { key: 'wix', label: 'Wix' }
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedExportFormat(key)}
+                    className="px-3 py-2 border rounded-lg text-xs font-medium transition-all duration-200"
+                    style={{
+                      fontFamily: 'Montserrat Alternates',
+                      background: selectedExportFormat === key 
+                        ? 'linear-gradient(135deg, #FAA819, #E99502)' 
+                        : 'rgba(255, 255, 255, 0.6)',
+                      color: selectedExportFormat === key ? 'white' : '#4a4642',
+                      border: selectedExportFormat === key 
+                        ? '1px solid transparent' 
+                        : '1px solid rgba(0, 0, 0, 0.1)',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Format-specific instructions */}
+            {selectedExportFormat === 'json' && (
+              <div 
+                className="mb-6 p-4 rounded-xl"
+                style={{ background: 'rgba(0, 169, 157, 0.1)', border: '1px solid rgba(0, 169, 157, 0.3)' }}
+              >
+                <p className="text-sm" style={{ fontFamily: 'Inter', fontWeight: 500, color: '#005a54' }}>
+                  <strong>For Next.js / React:</strong> Paste this JSON into a <code className="bg-white/50 px-1 rounded">const schemaMarkup = &#123;...&#125;</code> variable and use with the Script component.
+                </p>
+              </div>
+            )}
+
+            {selectedExportFormat !== 'raw' && selectedExportFormat !== 'json' && (
+              <div 
+                className="mb-6 p-4 rounded-xl"
+                style={{ background: 'rgba(250, 168, 25, 0.1)', border: '1px solid rgba(250, 168, 25, 0.3)' }}
+              >
+                <p className="text-sm" style={{ fontFamily: 'Inter', fontWeight: 500, color: '#92400e' }}>
+                  {selectedExportFormat === 'squarespace' && 'Go to Settings → Advanced → Code Injection → Header'}
+                  {selectedExportFormat === 'wordpress' && 'Add to header.php before </head> or use a plugin like "Insert Headers and Footers"'}
+                  {selectedExportFormat === 'webflow' && 'Go to Page Settings → Custom Code → Head Code'}
+                  {selectedExportFormat === 'shopify' && 'Go to Online Store → Themes → Edit Code → theme.liquid, paste before </head>'}
+                  {selectedExportFormat === 'wix' && 'Go to Settings → Custom Code → Head section'}
+                </p>
+              </div>
+            )}
+
+            {/* Copy Button */}
+            <button
+              onClick={copySchemaWithFormat}
+              className="w-full py-3 px-6 rounded-xl text-white font-semibold transition-all hover:shadow-lg flex items-center justify-center gap-2"
+              style={{
+                fontFamily: 'Montserrat Alternates',
+                background: 'linear-gradient(135deg, #00A99D 0%, #0D7871 100%)',
+              }}
+            >
+              📋 Copy to Clipboard
+            </button>
+
+            {/* Validation Links */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-xs text-center" style={{ fontFamily: 'Inter', color: '#6b7280' }}>
+                Validate your schema: {' '}
+                <a href="https://validator.schema.org/" target="_blank" rel="noopener noreferrer" className="text-[#00A99D] hover:underline">
+                  Schema.org Validator
+                </a>
+                {' '} or {' '}
+                <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener noreferrer" className="text-[#00A99D] hover:underline">
+                  Google Rich Results Test
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
