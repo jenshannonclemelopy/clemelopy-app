@@ -7,7 +7,7 @@ import Link from 'next/link';
 import MobileNudge from './MobileNudge';
 import EmailConfirmationBanner from '../components/EmailConfirmationBanner';
 
-type NavItem = 'workspace' | 'my-projects' | 'tools' | 'linking-strategy' | 'schema-studio' | 'learn' | 'to-do' | 'support' | 'settings' | 'logout';
+type NavItem = 'workspace' | 'my-projects' | 'tools' | 'orchard-audit' | 'share-of-model' | 'analytics' | 'linking-strategy' | 'schema-studio' | 'learn' | 'to-do' | 'support' | 'settings' | 'logout';
 
 interface LayoutProps {
   children: ReactNode;
@@ -579,6 +579,8 @@ export default function Layout({ children, activeNav, pageBackground, pageTitle,
       href: '#', 
       icon: '/icons/tools.svg',
       submenu: [
+        { key: 'orchard-audit', label: 'Orchard Audit', href: '/tools/orchard-audit', icon: '/icons/orchard-audit.svg' },
+        { key: 'share-of-model', label: 'Share of Model', href: '/tools/share-of-model', icon: '/icons/share-of-model.svg' },
         { key: 'analytics', label: 'Analytics', href: '/tools/analytics', icon: '/icons/analytics.svg' },
         { key: 'linking-strategy', label: 'Linking Strategy', href: '/tools/linking-strategy', icon: '/icons/link.svg' },
         { key: 'schema-studio', label: 'Schema Studio', href: '/tools/schema-studio', icon: '/icons/schema.svg' },
@@ -594,7 +596,7 @@ export default function Layout({ children, activeNav, pageBackground, pageTitle,
   const [expandedNavItem, setExpandedNavItem] = useState<string | null>(null);
 
   // Check if Tools should be highlighted (when a child route is active)
-  const isToolsActive = activeNav === 'tools' || activeNav === 'linking-strategy' || activeNav === 'schema-studio';
+  const isToolsActive = activeNav === 'tools' || activeNav === 'orchard-audit' || activeNav === 'share-of-model' || activeNav === 'analytics' || activeNav === 'linking-strategy' || activeNav === 'schema-studio';
 
   // Show loading while checking auth
   if (isAuthenticated === null) {

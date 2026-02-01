@@ -11,57 +11,37 @@ export default function SchemaStudioPage() {
   // Tour state
   const [showTour, setShowTour] = useState(false);
   const [tourCompleted, setTourCompleted] = useState(false);
-  
-  // State to control SchemaBuilder's active tab from the tour
   const [externalActiveTab, setExternalActiveTab] = useState<string | undefined>(undefined);
 
-  // Check localStorage on mount
+  // Check if tour was completed before
   useEffect(() => {
-    const completed = localStorage.getItem('clemelopy_schema_studio_tour_completed') === 'true';
-    setTourCompleted(completed);
+    const completed = localStorage.getItem('tour-schema-studio-completed');
+    setTourCompleted(completed === 'true');
   }, []);
-
-  // Handler for tour actions - switches tabs during the tour
-  // This handles BOTH beforeAction and action callbacks
-  const handleTourAction = (action: string) => {
-    switch (action) {
-      case 'switchToUrl':
-        setExternalActiveTab('url');
-        break;
-      case 'switchToPaste':
-        setExternalActiveTab('paste');
-        break;
-      case 'switchToManual':
-        setExternalActiveTab('manual');
-        break;
-      case 'switchToBatch':
-        setExternalActiveTab('batch');
-        break;
-    }
-  };
-
-  const handleTourComplete = () => {
-    setShowTour(false);
-    setTourCompleted(true);
-    setExternalActiveTab(undefined);
-    localStorage.setItem('clemelopy_schema_studio_tour_completed', 'true');
-  };
 
   const handleTourClose = () => {
     setShowTour(false);
     setExternalActiveTab(undefined);
   };
 
+  const handleTourComplete = () => {
+    setShowTour(false);
+    setTourCompleted(true);
+    setExternalActiveTab(undefined);
+    localStorage.setItem('tour-schema-studio-completed', 'true');
+  };
+
   const handleTourSkip = () => {
     setShowTour(false);
     setExternalActiveTab(undefined);
-    localStorage.setItem('clemelopy_schema_studio_tour_dismissed', 'true');
   };
 
-  const handleStartTour = () => {
-    // Reset to URL tab when starting tour
-    setExternalActiveTab('url');
-    setShowTour(true);
+  // Handle tour actions (tab switching)
+  const handleTourAction = (action: string) => {
+    if (action.startsWith('switchTab:')) {
+      const tab = action.replace('switchTab:', '');
+      setExternalActiveTab(tab);
+    }
   };
 
   return (
@@ -69,6 +49,7 @@ export default function SchemaStudioPage() {
       <main>
         {/* Header - Frosted Glass Container */}
         <header 
+          data-tour="schema-header"
           className="rounded-2xl px-8 py-12 mb-8"
           style={{
             background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.7) 50%, rgba(0, 169, 157, 0.05) 100%)',
@@ -109,7 +90,7 @@ export default function SchemaStudioPage() {
             </div>
             {/* Tour Button */}
             <TourHelpButton 
-              onClick={handleStartTour} 
+              onClick={() => setShowTour(true)} 
               hasCompleted={tourCompleted}
             />
           </div>
@@ -130,10 +111,9 @@ export default function SchemaStudioPage() {
           <SchemaBuilder 
             externalActiveTab={externalActiveTab}
             onTabChange={(tab) => {
-              // If user manually changes tab during tour, sync external state
-              // This prevents the tour from fighting with user input
-              if (showTour) {
-                setExternalActiveTab(tab);
+              // If user manually changes tab during tour, clear external control
+              if (externalActiveTab && tab !== externalActiveTab) {
+                setExternalActiveTab(undefined);
               }
             }}
           />

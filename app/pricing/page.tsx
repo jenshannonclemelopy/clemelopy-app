@@ -217,7 +217,7 @@ export default function PricingPage() {
                       fontWeight: 600,
                     }}
                   >
-                    🍊 Beta pricing
+                    🍊 Founding member rate during beta
                   </span>
                 </div>
 
@@ -237,13 +237,14 @@ export default function PricingPage() {
                 {/* Features */}
                 <ul className="space-y-4 mb-8">
                   {[
-                    'Access to Clemelopy Workspace',
-                    'Up to 8 Linking Strategy Maps per month',
-                    '3 page audits through Orchard Audits per month',
-                    'Schema Studio access',
-                    'GA4 referral analytics tracking',
-                    'To-do list & project management',
-                    'Cancel anytime',
+                    'Clemelopy Workspace',
+                    'Orchard Audit — 3 pages/mo',
+                    'Share of Model — Manual tracking',
+                    '8 Linking Strategy Maps per month',
+                    'GA4 Integration',
+                    'Schema Studio',
+                    'To-Do List',
+                    'Support',
                   ].map((feature, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <svg
@@ -261,6 +262,14 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
+
+                {/* Extra Pack Note */}
+                <p
+                  className="text-center text-sm mb-6"
+                  style={{ fontFamily: 'Inter', fontWeight: 500, color: '#6b6560' }}
+                >
+                  Need more? Add a 5-run pack for <span style={{ textDecoration: 'line-through', color: '#9ca3af' }}>$24</span> <span style={{ fontWeight: 600, color: '#00A99D' }}>$19</span>
+                </p>
 
                 {/* CTA */}
                 {isCurrentPlan('starter') ? (
@@ -299,7 +308,7 @@ export default function PricingPage() {
                         Loading...
                       </>
                     ) : (
-                      'Subscribe Now'
+                      'Get Started'
                     )}
                   </button>
                 )}
@@ -373,7 +382,7 @@ export default function PricingPage() {
                       fontWeight: 600,
                     }}
                   >
-                    🍊 Beta pricing
+                    🍊 Founding member rate during beta
                   </span>
                 </div>
 
@@ -393,13 +402,15 @@ export default function PricingPage() {
                 {/* Features */}
                 <ul className="space-y-4 mb-8">
                   {[
-                    'Access to Clemelopy Workspace',
-                    'Up to 15 Linking Strategy Maps per month',
-                    '1 full site Orchard Audit per month',
-                    'Schema Studio access',
-                    'GA4 referral analytics tracking',
-                    'To-do list & project management',
-                    'Cancel anytime',
+                    'Clemelopy Workspace',
+                    'Orchard Audit — 10 pages + 1 site/mo',
+                    'Share of Model — Automated + Manual',
+                    'Research Notes — 10/mo',
+                    '15 Linking Strategy Maps per month',
+                    'GA4 Integration',
+                    'Schema Studio',
+                    'To-Do List',
+                    'Priority support',
                   ].map((feature, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <svg
@@ -417,6 +428,14 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
+
+                {/* Priority Support Note */}
+                <p
+                  className="text-center text-sm mb-6"
+                  style={{ fontFamily: 'Inter', fontWeight: 500, color: '#6b6560' }}
+                >
+                  Includes priority support & site audits
+                </p>
 
                 {/* CTA */}
                 {isCurrentPlan('growth') ? (
@@ -455,13 +474,127 @@ export default function PricingPage() {
                         Loading...
                       </>
                     ) : (
-                      'Subscribe Now'
+                      'Get Started'
                     )}
                   </button>
                 )}
               </div>
             </div>
           )}
+
+          {/* Comparison Chart */}
+          <div
+            className="mt-12 rounded-2xl overflow-hidden max-w-4xl mx-auto"
+            style={{
+              background: 'rgba(255, 255, 255, 0.7)',
+              border: '1px solid rgba(255, 255, 255, 0.9)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+            }}
+          >
+            {/* Header */}
+            <div
+              className="py-4 px-6"
+              style={{
+                background: 'linear-gradient(135deg, #FAA819 0%, #E99502 25%, #00A99D 75%, #0D7871 100%)',
+              }}
+            >
+              <h3
+                className="text-center text-white"
+                style={{ fontFamily: 'Montserrat Alternates', fontWeight: 700, fontSize: '1.25rem', margin: 0 }}
+              >
+                Compare Plans
+              </h3>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full" style={{ borderCollapse: 'collapse', fontFamily: 'Inter', minWidth: '600px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid rgba(0, 0, 0, 0.08)' }}>
+                    <th
+                      className="text-left py-4 px-6"
+                      style={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.9rem', width: '50%' }}
+                    >
+                      Feature
+                    </th>
+                    <th
+                      className="text-center py-4 px-6"
+                      style={{ fontWeight: 700, fontSize: '0.95rem', color: '#00A99D' }}
+                    >
+                      Starter — $29/mo
+                    </th>
+                    <th
+                      className="text-center py-4 px-6"
+                      style={{ fontWeight: 700, fontSize: '0.95rem', color: '#E99502' }}
+                    >
+                      Growth — $79/mo
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { feature: 'Clemelopy Workspace', starter: true, growth: true },
+                    { feature: 'Orchard Audit — Pages', starter: '3/month', growth: '10/month' },
+                    { feature: 'Orchard Audit — Full Site', starter: '—', growth: '1/month' },
+                    { feature: 'Share of Model — Manual Tracking', starter: true, growth: true },
+                    { feature: 'Share of Model — Automated Tracking', starter: '—', growth: true },
+                    { feature: 'Research Notes', starter: '—', growth: '10/month' },
+                    { feature: 'Linking Strategy Maps', starter: '8/month', growth: '15/month' },
+                    { feature: 'GA4 Integration', starter: true, growth: true },
+                    { feature: 'Schema Studio', starter: true, growth: true },
+                    { feature: 'To-Do List', starter: true, growth: true },
+                    { feature: 'Support', starter: 'Standard', growth: 'Priority' },
+                  ].map((row, i) => (
+                    <tr
+                      key={i}
+                      style={{
+                        borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+                        background: i % 2 === 0 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.02)',
+                      }}
+                    >
+                      <td className="py-3.5 px-6" style={{ color: '#1a1a1a', fontSize: '0.9rem' }}>
+                        {row.feature}
+                      </td>
+                      <td className="py-3.5 px-6 text-center" style={{ color: '#1a1a1a', fontSize: '0.9rem' }}>
+                        {row.starter === true ? (
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#00A99D"
+                            strokeWidth="3"
+                            style={{ width: '20px', height: '20px', display: 'inline-block' }}
+                          >
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        ) : row.starter === '—' ? (
+                          <span style={{ color: '#ccc' }}>—</span>
+                        ) : (
+                          <span style={{ fontWeight: 500 }}>{row.starter}</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-6 text-center" style={{ color: '#1a1a1a', fontSize: '0.9rem' }}>
+                        {row.growth === true ? (
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#E99502"
+                            strokeWidth="3"
+                            style={{ width: '20px', height: '20px', display: 'inline-block' }}
+                          >
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        ) : row.growth === '—' ? (
+                          <span style={{ color: '#ccc' }}>—</span>
+                        ) : (
+                          <span style={{ fontWeight: 500 }}>{row.growth}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           {/* Already subscribed message */}
           {currentPlan && (

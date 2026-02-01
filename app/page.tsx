@@ -1398,7 +1398,17 @@ export default function Workspace() {
         </div>
 
         {/* Latest from the Blog */}
-        <section className="mb-8" aria-labelledby="blog-heading">
+        <section 
+          className="mb-8 p-6 rounded-2xl" 
+          aria-labelledby="blog-heading"
+          style={{
+            background: 'rgba(255, 255, 255, 0.5)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+          }}
+        >
           <h2 
             id="blog-heading"
             className="text-xl mb-6 text-[#1a1a1a]" 
@@ -1419,16 +1429,7 @@ export default function Workspace() {
               <span className="sr-only">Loading blog posts...</span>
             </div>
           ) : blogPosts.length === 0 ? (
-            <div 
-              className="p-8 text-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(0, 169, 157, 0.1) 100%)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.6)',
-                borderRadius: '24px',
-              }}
-            >
+            <div className="p-8 text-center">
               <p 
                 className="text-[#4a4642]" 
                 style={{ fontFamily: 'Inter', fontWeight: 500 }}
@@ -1441,88 +1442,88 @@ export default function Workspace() {
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
               aria-label="Blog posts"
             >
-              {blogPosts.map((post, index) => (
-                <li key={index}>
-                  <a
-                    href={post.url || post.link || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block overflow-hidden transition-all duration-300 hover:scale-[1.02] group cursor-pointer"
-                    style={{
-                      background: index === 0 
-                        ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 60%, rgba(250, 168, 25, 0.1) 100%)'
-                        : 'linear-gradient(145deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 60%, rgba(0, 169, 157, 0.1) 100%)',
-                      backdropFilter: 'blur(10px)',
-                      WebkitBackdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.7)',
-                      borderRadius: '20px',
-                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
-                    }}
-                    onFocus={(e) => Object.assign(e.currentTarget.style, focusStyles)}
-                    onBlur={(e) => {
-                      e.currentTarget.style.outline = 'none';
-                      e.currentTarget.style.outlineOffset = '0';
-                    }}
-                  >
-                    {/* Header with gradient and minimalist icon */}
-                    <div 
-                      className="h-48 flex items-center justify-center"
+              {blogPosts.map((post, index) => {
+                // Gradient styles matching the blog (image_style 1-5)
+                const getGradient = (style: number) => {
+                  switch (style) {
+                    case 1: // Teal to Orange
+                      return 'linear-gradient(135deg, #00A99D 0%, #FAA819 100%)';
+                    case 2: // Orange to Teal
+                      return 'linear-gradient(135deg, #FAA819 0%, #00A99D 100%)';
+                    case 3: // Teal to Light Teal
+                      return 'linear-gradient(135deg, #00A99D 0%, #4ECDC4 100%)';
+                    case 4: // Orange to Yellow
+                      return 'linear-gradient(135deg, #FAA819 0%, #FFD93D 100%)';
+                    case 5: // Purple to Pink (if used)
+                      return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    default:
+                      return 'linear-gradient(135deg, #00A99D 0%, #FAA819 100%)';
+                  }
+                };
+
+                const imageStyle = (post as any).imageStyle || 1;
+                const gradient = getGradient(imageStyle);
+
+                return (
+                  <li key={index} className="flex">
+                    <a
+                      href={post.url || post.link || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col overflow-hidden transition-all duration-300 hover:scale-[1.02] group cursor-pointer w-full"
                       style={{
-                        background: index === 0 
-                          ? 'linear-gradient(135deg, rgba(250, 168, 25, 0.2) 0%, rgba(0, 169, 157, 0.2) 100%)'
-                          : 'linear-gradient(135deg, rgba(0, 169, 157, 0.2) 0%, rgba(250, 168, 25, 0.2) 100%)',
+                        background: 'rgba(255, 255, 255, 0.7)',
+                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                        borderRadius: '20px',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
                       }}
-                      aria-hidden="true"
+                      onFocus={(e) => Object.assign(e.currentTarget.style, focusStyles)}
+                      onBlur={(e) => {
+                        e.currentTarget.style.outline = 'none';
+                        e.currentTarget.style.outlineOffset = '0';
+                      }}
                     >
-                      {index === 0 ? (
-                        <svg 
-                          className="w-16 h-16 text-[#c47f00] opacity-60 group-hover:opacity-80 transition-opacity duration-300" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                          aria-hidden="true"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      ) : (
-                        <svg 
-                          className="w-16 h-16 text-[#006b63] opacity-60 group-hover:opacity-80 transition-opacity duration-300" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                          aria-hidden="true"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                      )}
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="p-6">
-                      <h3 
-                        className="text-lg mb-2 text-[#1a1a1a] group-hover:text-[#c47f00] transition-colors duration-300 line-clamp-2" 
-                        style={{ fontFamily: 'Montserrat Alternates', fontWeight: 600 }}
-                      >
-                        {post.title}
-                        <span className="sr-only"> (opens in new tab)</span>
-                      </h3>
-                      <p 
-                        className="text-sm text-[#4a4642] mb-3 line-clamp-2" 
-                        style={{ fontFamily: 'Inter', fontWeight: 500 }}
-                      >
-                        {post.excerpt || post.description || 'Read more on the blog...'}
-                      </p>
-                      <span 
-                        className="text-sm text-[#006b63] font-semibold group-hover:text-[#005a54] transition-colors duration-300" 
-                        style={{ fontFamily: 'Montserrat Alternates' }}
+                      {/* Gradient header with title */}
+                      <div 
+                        className="h-40 p-4 flex items-end"
+                        style={{
+                          background: gradient,
+                          borderRadius: '18px 18px 0 0',
+                        }}
                         aria-hidden="true"
                       >
-                        Read More →
-                      </span>
-                    </div>
-                  </a>
-                </li>
-              ))}
+                        <h3 
+                          className="text-lg text-white font-bold line-clamp-2" 
+                          style={{ 
+                            fontFamily: 'Montserrat Alternates', 
+                            fontWeight: 700,
+                            textShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+                          }}
+                        >
+                          {post.title}
+                        </h3>
+                      </div>
+                      
+                      {/* Content area */}
+                      <div className="p-5 flex flex-col flex-grow">
+                        <p 
+                          className="text-sm text-[#4a4642] mb-4 line-clamp-3 flex-grow" 
+                          style={{ fontFamily: 'Inter', fontWeight: 500 }}
+                        >
+                          {post.excerpt || post.description || 'Read more on the blog...'}
+                        </p>
+                        <span 
+                          className="text-sm text-[#00A99D] font-semibold group-hover:text-[#0D7871] transition-colors duration-300 mt-auto" 
+                          style={{ fontFamily: 'Montserrat Alternates' }}
+                          aria-hidden="true"
+                        >
+                          Read More →
+                        </span>
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

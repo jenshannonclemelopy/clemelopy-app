@@ -1,0 +1,68 @@
+import { TourStep } from './PageTour';
+
+export const orchardAuditTourSteps: TourStep[] = [
+  {
+    id: 'welcome',
+    target: null,
+    title: 'Welcome to Orchard Audit! 🌳',
+    content: 'See your website the way AI sees it. Get a GEO readiness score with actionable recommendations to improve your visibility in AI search results.',
+    position: 'center',
+    spotlightPadding: 0,
+  },
+  {
+    id: 'usage-stats',
+    target: '[data-tour="audit-usage-stats"]',
+    title: 'Usage Tracker',
+    content: 'Keep track of how many audits you have remaining this month. Free plan includes single page audits, while Growth unlocks full site audits.',
+    position: 'bottom',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'audit-type',
+    target: '[data-tour="audit-type-selector"]',
+    title: 'Choose Audit Type',
+    content: 'Single Page audits analyze one URL at a time. Full Site audits (Growth plan) crawl up to 50 pages for a comprehensive website analysis.',
+    position: 'bottom',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'url-input',
+    target: '[data-tour="audit-url-input"]',
+    title: 'Enter Your URL',
+    content: 'Paste the URL you want to audit. For single page audits, use the specific page URL. For full site audits, use your homepage.',
+    position: 'bottom',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'run-audit',
+    target: '[data-tour="audit-run-button"]',
+    title: 'Run the Audit',
+    content: 'Click here to start the analysis. It usually takes 15-30 seconds to crawl your page and generate your GEO readiness report.',
+    position: 'left',
+    spotlightPadding: 8,
+  },
+  {
+    id: 'what-we-analyze',
+    target: '[data-tour="audit-categories"]',
+    title: 'What We Analyze',
+    content: 'We check 6 key areas: Clarity (headings & structure), Authority (schema & identity), Structure (links & navigation), AI Readability (quotable content), Media (images & alt text), and Accessibility (WCAG compliance).',
+    position: 'top',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'recent-audits',
+    target: '[data-tour="audit-history"]',
+    title: 'Recent Audits',
+    content: 'Your past audits appear here. Click any audit to reload the results and track your improvements over time.',
+    position: 'top',
+    spotlightPadding: 12,
+  },
+  {
+    id: 'complete',
+    target: null,
+    title: 'Ready to Audit! 🎉',
+    content: 'Enter a URL and click "Run Audit" to get started. You\'ll receive a detailed score with specific recommendations to improve your AI visibility.',
+    position: 'center',
+    spotlightPadding: 0,
+  },
+];
